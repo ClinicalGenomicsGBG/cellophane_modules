@@ -1,0 +1,35 @@
+type: object
+properties:
+  modules_init:
+    type: path
+    description: Path to modules init script
+
+  iris:
+    type: object
+    properties:
+      credentials:
+        type: path
+        description: IRIS credentials file
+      fastq_temp:
+        type: path
+        description: Temporary directory for fastq files
+    required:
+      - credentials
+      - fastq_temp
+
+  petasuite:
+    type: object
+    properties:
+      sge_queue:
+        type: string
+        description: SGE queue for petasuite
+      sge_pe:
+        type: string
+        description: SGE parallel environment for petasuite
+      sge_slots:
+        type: integer
+        description: SGE slots (threads) for petasuite
+    required:
+      - sge_queue
+      - sge_pe
+      - sge_slots

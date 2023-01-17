@@ -1,0 +1,27 @@
+type: object
+properties:
+  slims:
+    properties:
+      analysis_pk:
+        description: Analysis primary key in SLIMS
+        type: integer
+      content_pk:
+        default: 6
+        description: Content type primary key in SLIMS
+        type: integer
+      password:
+        description: SLIMS password
+        type: string
+      url:
+        description: SLIMS URL
+        type: string
+      username:
+        description: SLIMS username
+        type: string
+    required:
+      - content_pk
+      - analysis_pk
+      - username
+      - password
+      - url
+    type: object
