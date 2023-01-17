@@ -12,13 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+
     - uses: peterjgrainger/action-create-branch@v2.2.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         branch: ${{ matrix.module }}
+
     - uses: s0/git-publish-subdir-action@develop
-      
       env:
         REPO: self
         BRANCH: ${{ matrix.module }}
