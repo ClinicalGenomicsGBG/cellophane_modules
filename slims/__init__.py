@@ -249,17 +249,20 @@ def slims_samples(
     if samples:
         logger.info("Samples already loaded")
     elif config.slims is not None:
-        logger.info(
-            f"Finding novel samples in SLIMS (analysis pk: {config.slims.analysis_pk})"
+        slims_connection = Slims(
+            name=__package__,
+            url=config.slims.url,
+            username=config.slims.username,
+            password=config.slims.password,
         )
-        slims_connection = Slims(name=__package__, **config.slims)
-
-        if config.sample_id:
-            samples = SlimsSamples.from_ids(slims_connection, config.sample_id)
-            for sid in config.sample_id:
+        if config.slims.sample_id:
+            logger.info("Looking for samples by ID")
+            samples = SlimsSamples.from_ids(slims_connection, config.slims.sample_id)
+            for sid in config.slims.sample_id:
                 if sid not in [sample.id for sample in samples]:
-                    logger.warning(f"Sample {sid} not found in SLIMS")
+                    logger.warning(f"Sample {sid} not found")
         else:
+            logger.info(f"Finding novel samples for analysis {config.analysis_pk}")
             samples = SlimsSamples.novel(
                 connection=slims_connection,
                 content_type=config.content_pk,

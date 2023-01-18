@@ -9,6 +9,9 @@ properties:
         default: 6
         description: Content type primary key in SLIMS
         type: integer
+      sample_id:
+        description: SLIMS Sample ID
+        type: array
       password:
         description: SLIMS password
         type: string
