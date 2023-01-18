@@ -198,7 +198,7 @@ class SlimsSamples(data.Samples[SlimsSample]):
 
         for original, derived in _bioinformatics:
             failed = all(
-                d.cntn_cntn_cstm_SecondaryAnalysisState.value == "failed"
+                d.cntn_cntn_cstm_SecondaryAnalysisState.value == "error"
                 for d in derived
             )
             if derived and (not failed or rerun_failed):
