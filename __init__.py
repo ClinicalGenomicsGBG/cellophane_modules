@@ -249,7 +249,12 @@ def slims_samples(
     if samples:
         logger.info("Samples already loaded")
     elif config.slims is not None:
-        slims_connection = Slims(name=__package__, **config.slims)
+        slims_connection = Slims(
+            name=__package__,
+            url=config.slims.url,
+            username=config.slims.username,
+            password=config.slims.password,
+        )
         if config.slims.sample_id:
             logger.info("Looking for samples by ID")
             samples = SlimsSamples.from_ids(slims_connection, config.slims.sample_id)
