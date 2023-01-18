@@ -11,7 +11,7 @@ properties:
         type: integer
       sample_id:
         description: SLIMS Sample ID
-        type: string
+        type: array
       password:
         description: SLIMS password
         type: string
