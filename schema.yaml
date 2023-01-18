@@ -15,7 +15,7 @@ properties:
       rerun_failed:
         description: Re-run previously failed samples
         default: false
-        type: bool
+        type: boolean
       password:
         description: SLIMS password
         type: string
