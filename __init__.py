@@ -135,13 +135,14 @@ class SlimsSamples(data.Samples[SlimsSample]):
     """A list of sample containers"""
 
     def __init__(self, connection: Slims, initlist: Optional[list[SlimsSample]] = None):
+        super().__init__(initlist)
         if initlist is not None:
-            for idx, sample in enumerate(initlist):
+            for idx, sample in enumerate(self):
                 if (
                     sample.bioinformatics is None
                     and sample.secondary_analysis is not None
                 ):
-                    initlist[idx].bioinformatics = connection.add(
+                    self[idx].bioinformatics = connection.add(
                         "Content",
                         {
                             "cntn_id": sample.cntn_id.value,  # type: ignore
@@ -154,8 +155,6 @@ class SlimsSamples(data.Samples[SlimsSample]):
                             "cntn_cstm_secondaryAnalysisBioinfo": sample.secondary_analysis,
                         },
                     )
-
-        super().__init__(initlist)
 
     @classmethod
     def novel(
