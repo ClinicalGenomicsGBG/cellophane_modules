@@ -136,25 +136,22 @@ class SlimsSamples(data.Samples[SlimsSample]):
 
     def __init__(self, connection: Slims, initlist: Optional[list[SlimsSample]] = None):
         super().__init__(initlist)
-        if initlist is not None:
-            for idx, sample in enumerate(self):
-                if (
-                    sample.bioinformatics is None
-                    and sample.secondary_analysis is not None
-                ):
-                    self[idx].bioinformatics = connection.add(
-                        "Content",
-                        {
-                            "cntn_id": sample.cntn_id.value,  # type: ignore
-                            "cntn_fk_contentType": Content.BIOINFORMATICS,
-                            "cntn_status": 10,  # Pending
-                            "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
-                            "cntn_fk_originalContent": sample.pk,
-                            "cntn_fk_user": "",  # FIXME: Should user be configuarable?
-                            "cntn_cstm_SecondaryAnalysisState": "novel",
-                            "cntn_cstm_secondaryAnalysisBioinfo": sample.secondary_analysis,
-                        },
-                    )
+        for idx, sample in enumerate(self):
+            if sample.bioinformatics is None and sample.secondary_analysis is not None:
+                self[idx].bioinformatics = connection.add(
+                    "Content",
+                    {
+                        "cntn_id": sample.cntn_id.value,  # type: ignore
+                        "cntn_fk_contentType": Content.BIOINFORMATICS,
+                        "cntn_status": 10,  # Pending
+                        "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
+                        "cntn_fk_originalContent": sample.pk,
+                        "cntn_fk_user": "",  # FIXME: Should user be configuarable?
+                        "cntn_cstm_SecondaryAnalysisState": "novel",
+                        "cntn_cstm_secondaryAnalysisBioinfo": sample.secondary_analysis,
+                    }
+                )
+        
 
     @classmethod
     def novel(
