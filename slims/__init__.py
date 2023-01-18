@@ -103,11 +103,11 @@ def get_derived_records(
     derived_from: Record | list[Record],
     *args,
     **kwargs,
-) -> dict[Record, Record | None]:
+) -> dict[Record, list[Record]]:
     """Get derived records from SLIMS"""
     match derived_from:
         case record if isinstance(record, Record):
-            original = {record.pk(): record}  # type: ignore
+            original = {record.pk(): record}
         case [*records] if all(isinstance(r, Record) for r in records):
             original = {r.pk(): r for r in records}
         case _:
@@ -116,13 +116,42 @@ def get_derived_records(
     criterion = is_one_of("cntn_fk_originalContent", [*original])
     records = get_records(connection, criterion, *args, **kwargs)
 
-    return {o: None for o in original.values()} | {
-        original[r.cntn_fk_originalContent.value]: r for r in records  # type: ignore
+    derived = {
+        o: [r for r in records if r.cntn_cstm_originalContent.value == pk]
+        for o, pk in original.values()
     }
 
+    return derived
 
-class SlimsSamples(data.Samples):
+
+class SlimsSample(data.Sample):
+    """A SLIMS sample container"""
+
+    bioinformatics: Optional[Record]
+    secondary_analysis: Optional[int]
+
+
+class SlimsSamples(data.Samples[SlimsSample]):
     """A list of sample containers"""
+
+    def __init__(self, connection: Slims, initlist: Optional[list[SlimsSample]] = None):
+        super().__init__(initlist)
+        for idx, sample in enumerate(self):
+            if sample.bioinformatics is None and sample.secondary_analysis is not None:
+                self[idx].bioinformatics = connection.add(
+                    "Content",
+                    {
+                        "cntn_id": sample.cntn_id.value,  # type: ignore
+                        "cntn_fk_contentType": Content.BIOINFORMATICS,
+                        "cntn_status": 10,  # Pending
+                        "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
+                        "cntn_fk_originalContent": sample.pk,
+                        "cntn_fk_user": "",  # FIXME: Should user be configuarable?
+                        "cntn_cstm_SecondaryAnalysisState": "novel",
+                        "cntn_cstm_secondaryAnalysisBioinfo": sample.secondary_analysis,
+                    }
+                )
+        
 
     @classmethod
     def novel(
@@ -130,90 +159,73 @@ class SlimsSamples(data.Samples):
         connection: Slims,
         analysis: int,
         content_type: int,
-        create=False,
+        rerun_failed: bool,
     ) -> "SlimsSamples":
         """Get novel samples"""
-        if content_type == Content.DNA:
-            _dna = get_records(
-                connection,
-                analysis=analysis,
-                content_type=Content.DNA,
-            )
 
-            _fastqs = [
-                v
-                for v in get_derived_records(
+        match content_type:
+            case Content.DNA:
+                _dna = get_records(
                     connection,
-                    derived_from=_dna,
+                    analysis=analysis,
+                    content_type=Content.DNA,
+                )
+
+                _fastqs = [
+                    r
+                    for v in get_derived_records(
+                        connection,
+                        derived_from=_dna,
+                        content_type=Content.FASTQ,
+                    ).values()
+                    for r in v
+                ]
+            case Content.FASTQ:
+                _fastqs = get_records(
+                    connection,
+                    analysis=analysis,
                     content_type=Content.FASTQ,
-                ).values()
-                if v is not None
-            ]
-
-        elif content_type == Content.FASTQ:
-            _fastqs = get_records(
-                connection,
-                analysis=analysis,
-                content_type=Content.FASTQ,
-            )
-
-        else:
-            raise ValueError(f"Invalid content type: {content_type}")
+                )
+            case _:
+                raise ValueError(f"Invalid content type: {content_type}")
 
         _bioinformatics = get_derived_records(
             connection,
             derived_from=_fastqs,
             content_type=Content.BIOINFORMATICS,
+            cntn_cstm_secondaryAnalysisBioinfo=analysis,
         )
 
-        if create:
-            for original in [o for o, d in _bioinformatics.items() if d is None]:
-                fields = {
-                    "cntn_id": original.cntn_id.value,  # type: ignore
-                    "cntn_fk_contentType": Content.BIOINFORMATICS,
-                    "cntn_status": 10,  # Pending
-                    "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
-                    "cntn_fk_originalContent": original.pk(),
-                    "cntn_fk_user": "",  # FIXME: Should user be configuarable?
-                    "cntn_cstm_SecondaryAnalysisState": "novel",
-                    "cntn_cstm_secondaryAnalysisBioinfo": analysis,
-                }
-                _bioinformatics[original] = connection.add("Content", fields)
-        else:
-            _bioinformatics = {k: v for k, v in _bioinformatics.items() if v is None}
+        for original, derived in _bioinformatics:
+            failed = all(
+                d.cntn_cntn_cstm_SecondaryAnalysisState.value == "error"
+                for d in derived
+            )
+            if derived and (not failed or rerun_failed):
+                _fastqs.remove(original)
 
-        return cls.from_records(
-            fastqs=_fastqs,
-            bioinformatics=[*_bioinformatics.values()],
-        )
+        return cls.from_fastqs(fastqs=_fastqs)
 
     @classmethod
     def from_slims(cls, connection: Slims, *args, **kwargs) -> "SlimsSamples":
         """Get samples from SLIMS"""
         _fastqs = get_records(connection, *args, **kwargs)
-        _bioinformatics = get_derived_records(
-            connection,
-            derived_from=_fastqs,
-            content_type=Content.BIOINFORMATICS,
-        )
-        return cls.from_records(_fastqs, [*_bioinformatics.values()])
+        return cls.from_fastqs(_fastqs)
 
     @classmethod
     def from_ids(cls, connection: Slims, ids: list[str]) -> "SlimsSamples":
         """Get samples from SLIMS by ID"""
         _fastqs = get_records(connection, content_type=Content.FASTQ, slims_id=ids)
-        _bioinformatics = get_derived_records(
-            connection,
-            derived_from=_fastqs,
-            content_type=Content.BIOINFORMATICS,
-        )
-        return cls.from_records(_fastqs, [*_bioinformatics.values()])
+        return cls.from_fastqs(_fastqs)
 
     @classmethod
-    def from_records(cls, fastqs: list[Record], bioinformatics: list[Record | None]):
+    def from_fastqs(
+        cls,
+        fastqs: list[Record],
+        secondary_analysis: Optional[int] = None,
+    ) -> "SlimsSamples":
         """Get samples from SLIMS records"""
         _fastqs = {f.pk(): f for f in fastqs}
-        _bioinformatics = {b.cntn_fk_originalContent.value: b for b in bioinformatics}
         _demuxer = {
             f.pk(): {**loads(f.cntn_cstm_demuxerSampleResult.value)} for f in fastqs
         }
@@ -224,11 +236,12 @@ class SlimsSamples(data.Samples):
 
         return cls(
             [
-                data.Container(
+                SlimsSample(
                     pk=pk,
-                    id=_fastqs[pk].cntn_id.value,  # type: ignore
+                    id=_fastqs[pk].cntn_id.value,
                     fastq=_fastqs[pk],
-                    bioinformatics=_bioinformatics[pk],
+                    bioinformatics=None,
+                    secondary_analysis=secondary_analysis,
                     backup=_backup[pk],
                     **_demuxer[pk],
                 )
@@ -236,11 +249,23 @@ class SlimsSamples(data.Samples):
             ]
         )
 
+    def update_bioinformatics(self, state: str) -> None:
+        """Update bioinformatics state in SLIMS"""
+        match state:
+            case "running" | "complete" | "error":
+                for sample in self:
+                    if sample.bioinformatics is not None:
+                        sample.bioinformatics = sample.bioinformatics.update(
+                            {"cntn_cstm_SecondaryAnalysisState": state}
+                        )
+            case _:
+                raise ValueError(f"Invalid state: {state}")
+
 
 @modules.pre_hook(label="SLIMS", priority=0)
 def slims_samples(
     config: cfg.Config,
-    samples: SlimsSamples,
+    samples: data.Samples,
     logger: LoggerAdapter,
     **_,
 ) -> Optional[SlimsSamples]:
@@ -248,6 +273,8 @@ def slims_samples(
 
     if samples:
         logger.info("Samples already loaded")
+        return None
+
     elif config.slims is not None:
         slims_connection = Slims(
             name=__package__,
@@ -267,6 +294,11 @@ def slims_samples(
                 connection=slims_connection,
                 content_type=config.content_pk,
                 analysis=config.analysis_pk,
-                create=True,
+                rerun_failed=config.slims.rerun_failed,
             )
+
         return samples
+
+    else:
+        logger.warning("No SLIMS connection configured")
+        return None

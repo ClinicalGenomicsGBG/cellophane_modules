@@ -12,6 +12,10 @@ properties:
       sample_id:
         description: SLIMS Sample ID
         type: array
+      rerun_failed:
+        description: Re-run previously failed samples
+        default: false
+        type: boolean
       password:
         description: SLIMS password
         type: string
