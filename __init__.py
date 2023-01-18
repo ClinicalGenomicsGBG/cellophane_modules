@@ -17,7 +17,7 @@ from slims.criteria import (
 )
 from slims.slims import Record, Slims
 
-from cellophane import data, cfg, modules, data
+from cellophane import data, cfg, modules
 
 
 class Content:
@@ -213,12 +213,12 @@ class SlimsSamples(data.Samples):
     def from_records(cls, fastqs: list[Record], bioinformatics: list[Record | None]):
         """Get samples from SLIMS records"""
         _fastqs = {f.pk(): f for f in fastqs}
-        _bioinformatics = {b.cntn_fk_originalContent.value: b for b in bioinformatics}  # type: ignore
+        _bioinformatics = {b.cntn_fk_originalContent.value: b for b in bioinformatics}
         _demuxer = {
-            f.pk(): {**loads(f.cntn_cstm_demuxerSampleResult.value)} for f in fastqs  # type: ignore
+            f.pk(): {**loads(f.cntn_cstm_demuxerSampleResult.value)} for f in fastqs
         }
         _backup = {
-            f.pk(): {**loads(f.cntn_cstm_demuxerBackupSampleResult.value)}  # type: ignore
+            f.pk(): {**loads(f.cntn_cstm_demuxerBackupSampleResult.value)}
             for f in fastqs
         }
 
@@ -252,7 +252,7 @@ def slims_samples(
         logger.info(
             f"Finding novel samples in SLIMS (analysis pk: {config.slims.analysis_pk})"
         )
-        slims_connection = slims.Slims(name=__package__, **config.slims)
+        slims_connection = Slims(name=__package__, **config.slims)
 
         if config.sample_id:
             samples = SlimsSamples.from_ids(slims_connection, config.sample_id)
