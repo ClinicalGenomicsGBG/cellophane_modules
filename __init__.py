@@ -254,7 +254,7 @@ def slims_samples(
         )
         slims_connection = Slims(name=__package__, **config.slims)
 
-        if config.sample_id:
+        if config.slims_sample_id:
             samples = SlimsSamples.from_ids(slims_connection, config.sample_id)
             for sid in config.sample_id:
                 if sid not in [sample.id for sample in samples]:
