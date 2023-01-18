@@ -33,7 +33,7 @@ def _fetch(
             remote_key = Path(remote_key).stem
 
         remote = hcpm.search_objects(local_path.name)
-        if len(remote) == 1:
+        if remote is not None and len(remote) == 1:
             remote_key = remote[0].key
         else:
             raise SystemExit(1)
@@ -42,7 +42,7 @@ def _fetch(
         hcpm.download_file(
             remote_key,
             local_path=str(local_path),
-            callback=None,
+            callback=False,
             force=True,
         )
 
@@ -71,14 +71,14 @@ def _fetch(
 @modules.pre_hook(label="HCP", priority=10)
 def hcp_fetch(
     config: cfg.Config,
-    samples: data.SamplesType,
+    samples: data.Samples,
     logger: LoggerAdapter,
     **_,
-) -> data.SamplesType:
+) -> data.Samples:
     """Fetch files from HCP."""
 
     _procs: list[tuple[mp.Process, int, int, Connection]] = []
-    
+
     for s_idx, sample in enumerate(samples):
         if all(Path(p).exists() for p in sample.fastq_paths):
             logger.debug(
