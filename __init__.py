@@ -16,7 +16,7 @@ from slims.criteria import (
     is_one_of,
 )
 from slims.slims import Record, Slims
-from functools import wraps
+from functools import wraps, cached_property
 
 from cellophane import data, cfg, modules
 
@@ -128,7 +128,7 @@ def get_derived_records(
 class SlimsSample(data.Sample):
     """A SLIMS sample container"""
 
-    connection: Slims
+    record: Record
     bioinformatics: Optional[Record]
     pk: int
 
@@ -138,23 +138,27 @@ class SlimsSample(data.Sample):
         **kwargs,
     ):
         super().__init__(
+            record=record,
             id=record.cntn_id.value,
             pk=record.pk(),
             bioinformatics=None,
-            connection=Slims(
-                "cellophane",
-                url=record.slims_api.url,
-                username=record.slims_api.username,
-                password=record.slims_api.password,
-            ),
             **kwargs,
+        )
+
+    @cached_property
+    def _connection(self) -> Slims:
+        return Slims(
+            "cellophane",
+            url=self.record.slims_api.url,
+            username=self.record.slims_api.username,
+            password=self.record.slims_api.password,
         )
 
     def add_bioinformatics(self, analysis: int):
         """Add a bioinformatics record to the sample"""
 
         if self.bioinformatics is None:
-            self.bioinformatics = self.connection.add(
+            self.bioinformatics = self._connection.add(
                 "Content",
                 {
                     "cntn_id": self.cntn_id.value,  # type: ignore
