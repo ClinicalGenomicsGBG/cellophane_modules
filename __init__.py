@@ -138,6 +138,7 @@ class SlimsSample(data.Sample):
         **kwargs,
     ):
         super().__init__(
+            id=record.cntn_id.value,
             pk=record.pk(),
             bioinformatics=None,
             connection=Slims(
