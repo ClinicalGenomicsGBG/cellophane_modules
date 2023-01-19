@@ -137,15 +137,17 @@ class SlimsSample(data.Sample):
         record: Record,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.connection = Slims(
-            "cellophane",
-            url=record.slims_api.url,
-            username=record.slims_api.username,
-            password=record.slims_api.password,
+        super().__init__(
+            pk=record.pk(),
+            bioinformatics=None,
+            connection=Slims(
+                "cellophane",
+                url=record.slims_api.url,
+                username=record.slims_api.username,
+                password=record.slims_api.password,
+            ),
+            **kwargs,
         )
-        self.pk = record.pk()
-        self.bioinformatics = None
 
     def add_bioinformatics(self, analysis: int):
         """Add a bioinformatics record to the sample"""
