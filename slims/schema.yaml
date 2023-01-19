@@ -26,7 +26,6 @@ properties:
         description: SLIMS username
         type: string
     required:
-      - content_pk
       - analysis_pk
       - username
       - password

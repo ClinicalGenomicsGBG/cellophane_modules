@@ -1,23 +1,24 @@
 """Module for getting samples from SLIMS"""
 
+from functools import cached_property, wraps
 from json import loads
-from time import time
-from typing import Optional
 from logging import LoggerAdapter
+from time import time
+from typing import Callable, Optional
 
 from humanfriendly import parse_timespan
 from slims.criteria import (
     Criterion,
     conjunction,
-    disjunction,
     contains,
+    disjunction,
     equals,
     greater_than_or_equal,
     is_one_of,
 )
 from slims.slims import Record, Slims
 
-from cellophane import data, cfg, modules
+from cellophane import cfg, data, modules
 
 
 class Content:
@@ -118,7 +119,7 @@ def get_derived_records(
 
     derived = {
         o: [r for r in records if r.cntn_cstm_originalContent.value == pk]
-        for o, pk in original.values()
+        for pk, o in original.items()
     }
 
     return derived
@@ -127,31 +128,70 @@ def get_derived_records(
 class SlimsSample(data.Sample):
     """A SLIMS sample container"""
 
+    record: Record
     bioinformatics: Optional[Record]
-    secondary_analysis: Optional[int]
+    pk: int
+
+    def __init__(
+        self,
+        record: Record,
+        **kwargs,
+    ):
+        super().__init__(
+            record=record,
+            id=record.cntn_id.value,
+            pk=record.pk(),
+            bioinformatics=None,
+            **kwargs,
+        )
+
+    @cached_property
+    def _connection(self) -> Slims:
+        return Slims(
+            "cellophane",
+            url=self.record.slims_api.raw_url,
+            username=self.record.slims_api.username,
+            password=self.record.slims_api.password,
+        )
+
+    def add_bioinformatics(self, analysis: int):
+        """Add a bioinformatics record to the sample"""
+
+        if self.bioinformatics is None:
+            self.bioinformatics = self._connection.add(
+                "Content",
+                {
+                    "cntn_id": self.id,
+                    "cntn_fk_contentType": Content.BIOINFORMATICS,
+                    "cntn_status": 10,  # Pending
+                    "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
+                    "cntn_fk_originalContent": self.pk,
+                    "cntn_fk_user": "",  # FIXME: Should user be configuarable?
+                    "cntn_cstm_SecondaryAnalysisState": "novel",
+                    "cntn_cstm_secondaryAnalysisBioinfo": analysis,
+                },
+            )
+
+    def set_bioinformatics_state(self, state):
+        """Set the bioinformatics state"""
+
+        match state:
+            case "running" | "complete" | "error":
+                if self.bioinformatics is not None:
+                    self.bioinformatics = self.bioinformatics.update(
+                        {"cntn_cstm_SecondaryAnalysisState": state}
+                    )
+            case _:
+                raise ValueError(f"Invalid state: {state}")
+
+    def __reduce__(self) -> str | tuple:
+        if hasattr(self, "_connection"):
+            delattr(self, "_connection")
+        return super().__reduce__()
 
 
 class SlimsSamples(data.Samples[SlimsSample]):
     """A list of sample containers"""
-
-    def __init__(self, connection: Slims, initlist: Optional[list[SlimsSample]] = None):
-        super().__init__(initlist)
-        for idx, sample in enumerate(self):
-            if sample.bioinformatics is None and sample.secondary_analysis is not None:
-                self[idx].bioinformatics = connection.add(
-                    "Content",
-                    {
-                        "cntn_id": sample.cntn_id.value,  # type: ignore
-                        "cntn_fk_contentType": Content.BIOINFORMATICS,
-                        "cntn_status": 10,  # Pending
-                        "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
-                        "cntn_fk_originalContent": sample.pk,
-                        "cntn_fk_user": "",  # FIXME: Should user be configuarable?
-                        "cntn_cstm_SecondaryAnalysisState": "novel",
-                        "cntn_cstm_secondaryAnalysisBioinfo": sample.secondary_analysis,
-                    }
-                )
-        
 
     @classmethod
     def novel(
@@ -196,7 +236,7 @@ class SlimsSamples(data.Samples[SlimsSample]):
             cntn_cstm_secondaryAnalysisBioinfo=analysis,
         )
 
-        for original, derived in _bioinformatics:
+        for original, derived in _bioinformatics.items():
             failed = all(
                 d.cntn_cntn_cstm_SecondaryAnalysisState.value == "error"
                 for d in derived
@@ -213,16 +253,25 @@ class SlimsSamples(data.Samples[SlimsSample]):
         return cls.from_fastqs(_fastqs)
 
     @classmethod
-    def from_ids(cls, connection: Slims, ids: list[str]) -> "SlimsSamples":
+    def from_ids(
+        cls,
+        connection: Slims,
+        ids: list[str],
+        analysis: int,
+    ) -> "SlimsSamples":
         """Get samples from SLIMS by ID"""
-        _fastqs = get_records(connection, content_type=Content.FASTQ, slims_id=ids)
+        _fastqs = get_records(
+            connection,
+            content_type=Content.FASTQ,
+            slims_id=ids,
+            analysis=analysis,
+        )
         return cls.from_fastqs(_fastqs)
 
     @classmethod
     def from_fastqs(
         cls,
         fastqs: list[Record],
-        secondary_analysis: Optional[int] = None,
     ) -> "SlimsSamples":
         """Get samples from SLIMS records"""
         _fastqs = {f.pk(): f for f in fastqs}
@@ -237,11 +286,7 @@ class SlimsSamples(data.Samples[SlimsSample]):
         return cls(
             [
                 SlimsSample(
-                    pk=pk,
-                    id=_fastqs[pk].cntn_id.value,
-                    fastq=_fastqs[pk],
-                    bioinformatics=None,
-                    secondary_analysis=secondary_analysis,
+                    record=_fastqs[pk],
                     backup=_backup[pk],
                     **_demuxer[pk],
                 )
@@ -249,20 +294,22 @@ class SlimsSamples(data.Samples[SlimsSample]):
             ]
         )
 
-    def update_bioinformatics(self, state: str) -> None:
+    def add_bioinformatics(self, analysis: int) -> None:
+        """Add bioinformatics content to SLIMS samples"""
+        for sample in self:
+            sample.add_bioinformatics(analysis)
+
+    def set_bioinformatics_state(self, state: str) -> None:
         """Update bioinformatics state in SLIMS"""
         match state:
             case "running" | "complete" | "error":
                 for sample in self:
-                    if sample.bioinformatics is not None:
-                        sample.bioinformatics = sample.bioinformatics.update(
-                            {"cntn_cstm_SecondaryAnalysisState": state}
-                        )
+                    sample.set_bioinformatics_state(state)
             case _:
                 raise ValueError(f"Invalid state: {state}")
 
 
-@modules.pre_hook(label="SLIMS", priority=0)
+@modules.pre_hook(label="SLIMS Fetch", priority=0)
 def slims_samples(
     config: cfg.Config,
     samples: data.Samples,
@@ -282,23 +329,54 @@ def slims_samples(
             username=config.slims.username,
             password=config.slims.password,
         )
+
         if config.slims.sample_id:
             logger.info("Looking for samples by ID")
-            samples = SlimsSamples.from_ids(slims_connection, config.slims.sample_id)
+            samples = SlimsSamples.from_ids(
+                connection=slims_connection,
+                ids=config.slims.sample_id,
+                analysis=config.slims.analysis_pk,
+            )
             for sid in config.slims.sample_id:
                 if sid not in [sample.id for sample in samples]:
-                    logger.warning(f"Sample {sid} not found")
-        else:
-            logger.info(f"Finding novel samples for analysis {config.analysis_pk}")
+                    logger.warning(f"FASTQ object for {sid} not found")
+                elif sum(s.id == sid for s in samples) > 1:
+                    logger.warning(f"Multiple FASTQ objects found for {sid}")
+
+        elif "analysis_pk" in config:
+            logger.info(f"Finding novel samples for analysis {config.slims.analysis_pk}")
             samples = SlimsSamples.novel(
                 connection=slims_connection,
                 content_type=config.content_pk,
-                analysis=config.analysis_pk,
+                analysis=config.slims.analysis_pk,
                 rerun_failed=config.slims.rerun_failed,
             )
 
+        else:
+            logger.error("No analysis configured")
+            return None
+
+        samples.add_bioinformatics(config.slims.analysis_pk)
+        samples.set_bioinformatics_state("running")
         return samples
 
     else:
         logger.warning("No SLIMS connection configured")
         return None
+
+
+@modules.post_hook(label="SLIMS Update")
+def slims_update(
+    config: cfg.Config,
+    samples: SlimsSamples,
+    logger: LoggerAdapter,
+    **_,
+) -> None:
+    """Update SLIMS samples with bioinformatics content."""
+
+    if isinstance(samples, SlimsSamples):
+        logger.info("Updating bioinformatics state")
+        for sample in samples:
+            sample.set_bioinformatics_state("complete" if sample.complete else "error")
+    else:
+        logger.info("No SLIMS samples to update")
