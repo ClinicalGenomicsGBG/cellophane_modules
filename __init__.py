@@ -351,6 +351,8 @@ def slims_samples(
             logger.error("No analysis configured")
             return None
 
+        samples.add_bioinformatics(config.slims.analysis_pk)
+        samples.set_bioinformatics_state("running")
         return samples
 
     else:
@@ -368,8 +370,8 @@ def slims_update(
     """Update SLIMS samples with bioinformatics content."""
 
     if isinstance(samples, SlimsSamples):
-        logger.info("Updating SLIMS")
-        samples.add_bioinformatics(config.slims.analysis_pk)
-        samples.set_bioinformatics_state("running")
+        logger.info("Updating bioinformatics state")
+        for sample in samples:
+            sample.set_bioinformatics_state("complete" if sample.complete else "error")
     else:
         logger.info("No SLIMS samples to update")
