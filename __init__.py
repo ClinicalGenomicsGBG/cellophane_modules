@@ -149,7 +149,7 @@ class SlimsSample(data.Sample):
     def _connection(self) -> Slims:
         return Slims(
             "cellophane",
-            url=self.record.slims_api.url,
+            url=self.record.slims_api.raw_url,
             username=self.record.slims_api.username,
             password=self.record.slims_api.password,
         )
@@ -319,7 +319,9 @@ def slims_samples(
             samples = SlimsSamples.from_ids(slims_connection, config.slims.sample_id)
             for sid in config.slims.sample_id:
                 if sid not in [sample.id for sample in samples]:
-                    logger.warning(f"Sample {sid} not found")
+                    logger.warning(f"FASTQ object for {sid} not found")
+                elif sum(s.id == sid for s in samples) > 1:
+                    logger.warning(f"Multiple FASTQ objects found for {sid}")
         else:
             logger.info(f"Finding novel samples for analysis {config.analysis_pk}")
             samples = SlimsSamples.novel(
