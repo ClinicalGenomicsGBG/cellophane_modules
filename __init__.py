@@ -161,7 +161,7 @@ class SlimsSample(data.Sample):
             self.bioinformatics = self._connection.add(
                 "Content",
                 {
-                    "cntn_id": self.cntn_id.value,  # type: ignore
+                    "cntn_id": self.id,
                     "cntn_fk_contentType": Content.BIOINFORMATICS,
                     "cntn_status": 10,  # Pending
                     "cntn_fk_location": 83,  # FIXME: Should location be configuarable?
