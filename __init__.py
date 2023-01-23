@@ -347,7 +347,7 @@ def slims_update(
 
     if isinstance(samples, SlimsSamples):
         logger.info("Updating SLIMS")
-        samples.add_bioinformatics(config.analysis_pk)
+        samples.add_bioinformatics(config.slims.analysis_pk)
         samples.set_bioinformatics_state("running")
     else:
         logger.info("No SLIMS samples to update")
