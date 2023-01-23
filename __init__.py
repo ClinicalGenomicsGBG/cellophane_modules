@@ -183,6 +183,11 @@ class SlimsSample(data.Sample):
                     )
             case _:
                 raise ValueError(f"Invalid state: {state}")
+    
+
+    def __reduce__(self) -> str | tuple:
+        delattr(self, "_connection")
+        return super().__reduce__()
 
 
 class SlimsSamples(data.Samples[SlimsSample]):
