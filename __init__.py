@@ -248,9 +248,19 @@ class SlimsSamples(data.Samples[SlimsSample]):
         return cls.from_fastqs(_fastqs)
 
     @classmethod
-    def from_ids(cls, connection: Slims, ids: list[str]) -> "SlimsSamples":
+    def from_ids(
+        cls,
+        connection: Slims,
+        ids: list[str],
+        analysis: int,
+    ) -> "SlimsSamples":
         """Get samples from SLIMS by ID"""
-        _fastqs = get_records(connection, content_type=Content.FASTQ, slims_id=ids)
+        _fastqs = get_records(
+            connection,
+            content_type=Content.FASTQ,
+            slims_id=ids,
+            analysis=analysis,
+        )
         return cls.from_fastqs(_fastqs)
 
     @classmethod
@@ -314,15 +324,21 @@ def slims_samples(
             username=config.slims.username,
             password=config.slims.password,
         )
+
         if config.slims.sample_id:
             logger.info("Looking for samples by ID")
-            samples = SlimsSamples.from_ids(slims_connection, config.slims.sample_id)
+            samples = SlimsSamples.from_ids(
+                connection=slims_connection,
+                ids=config.slims.sample_id,
+                analysis=config.analysis_pk,
+            )
             for sid in config.slims.sample_id:
                 if sid not in [sample.id for sample in samples]:
                     logger.warning(f"FASTQ object for {sid} not found")
                 elif sum(s.id == sid for s in samples) > 1:
                     logger.warning(f"Multiple FASTQ objects found for {sid}")
-        else:
+
+        elif "analysis_pk" in config:
             logger.info(f"Finding novel samples for analysis {config.analysis_pk}")
             samples = SlimsSamples.novel(
                 connection=slims_connection,
@@ -330,6 +346,10 @@ def slims_samples(
                 analysis=config.analysis_pk,
                 rerun_failed=config.slims.rerun_failed,
             )
+
+        else:
+            logger.error("No analysis configured")
+            return None
 
         return samples
 
