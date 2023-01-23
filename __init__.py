@@ -1,24 +1,24 @@
 """Module for getting samples from SLIMS"""
 
+from functools import cached_property, wraps
 from json import loads
-from time import time
-from typing import Optional, Callable
 from logging import LoggerAdapter
+from time import time
+from typing import Callable, Optional
 
 from humanfriendly import parse_timespan
 from slims.criteria import (
     Criterion,
     conjunction,
-    disjunction,
     contains,
+    disjunction,
     equals,
     greater_than_or_equal,
     is_one_of,
 )
 from slims.slims import Record, Slims
-from functools import wraps, cached_property
 
-from cellophane import data, cfg, modules
+from cellophane import cfg, data, modules
 
 
 class Content:
@@ -294,7 +294,7 @@ class SlimsSamples(data.Samples[SlimsSample]):
                 raise ValueError(f"Invalid state: {state}")
 
 
-@modules.pre_hook(label="SLIMS", priority=0)
+@modules.pre_hook(label="SLIMS Fetch", priority=0)
 def slims_samples(
     config: cfg.Config,
     samples: data.Samples,
@@ -336,27 +336,18 @@ def slims_samples(
         return None
 
 
-def update_slims_bioinformatics(func: Callable) -> Callable:
-    """Update SLIMS bioinformatics state"""
+@modules.post_hook(label="SLIMS Update")
+def slims_update(
+    config: cfg.Config,
+    samples: SlimsSamples,
+    logger: LoggerAdapter,
+    **_,
+) -> None:
+    """Update SLIMS samples with bioinformatics content."""
 
-    @wraps(func)
-    def wrapper(
-        *args,
-        config: cfg.Config,
-        samples: SlimsSamples,
-        logger: LoggerAdapter,
-        **kwargs,
-    ) -> None:
-        """Wrapper"""
-        if samples:
-            logger.info("Updating SLIMS bioinformatics state")
-            samples.add_bioinformatics(config.slims.analysis_pk)
-            samples.set_bioinformatics_state("running")
-
-        try:
-            func(*args, config=config, samples=samples, logger=logger, **kwargs)
-        except Exception as exception:
-            samples.set_bioinformatics_state("error")
-            raise exception
-
-    return wrapper
+    if isinstance(samples, SlimsSamples):
+        logger.info("Updating SLIMS")
+        samples.add_bioinformatics(config.analysis_pk)
+        samples.set_bioinformatics_state("running")
+    else:
+        logger.info("No SLIMS samples to update")
