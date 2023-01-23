@@ -330,7 +330,7 @@ def slims_samples(
             samples = SlimsSamples.from_ids(
                 connection=slims_connection,
                 ids=config.slims.sample_id,
-                analysis=config.analysis_pk,
+                analysis=config.slims.analysis_pk,
             )
             for sid in config.slims.sample_id:
                 if sid not in [sample.id for sample in samples]:
@@ -339,11 +339,11 @@ def slims_samples(
                     logger.warning(f"Multiple FASTQ objects found for {sid}")
 
         elif "analysis_pk" in config:
-            logger.info(f"Finding novel samples for analysis {config.analysis_pk}")
+            logger.info(f"Finding novel samples for analysis {config.slims.analysis_pk}")
             samples = SlimsSamples.novel(
                 connection=slims_connection,
                 content_type=config.content_pk,
-                analysis=config.analysis_pk,
+                analysis=config.slims.analysis_pk,
                 rerun_failed=config.slims.rerun_failed,
             )
 
