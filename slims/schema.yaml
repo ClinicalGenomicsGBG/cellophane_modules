@@ -25,6 +25,10 @@ properties:
       username:
         description: SLIMS username
         type: string
+      dry_run:
+        description: Do not create SLIMS bioinformatics objects
+        default: false
+        type: boolean
     required:
       - analysis_pk
       - username
