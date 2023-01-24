@@ -28,15 +28,22 @@ def _fetch(
     )
 
     if remote_key is None:
-        remote_key = Path(local_path.name).stem
-        while Path(remote_key).suffix:
-            remote_key = Path(remote_key).stem
+        _remote_key = Path(local_path.name).stem
+        while Path(_remote_key).suffix:
+            _remote_key = Path(_remote_key).stem
 
-        remote = hcpm.search_objects(local_path.name)
+        remote = hcpm.search_objects(_remote_key)
         if remote is not None and len(remote) == 1:
-            remote_key = remote[0].key
+            _remote_key = remote[0].key
         else:
             raise SystemExit(1)
+    else:
+        _remote_key = remote_key
+
+    if (suffix := Path(_remote_key).suffix) in (".fasterq", ".fastq", ".fastq.gz"):
+        local_path = local_path.with_suffix(suffix)
+    else:
+        raise SystemExit(1)
 
     if not local_path.exists():
         hcpm.download_file(
@@ -63,6 +70,7 @@ def _fetch(
             cwd=local_path.parent,
             check=True,
         )
+        local_path = local_path.with_suffix(".fastq.gz")
 
     pipe.send(local_path)
     pipe.close()
@@ -90,12 +98,15 @@ def hcp_fetch(
                 logger.warning(f"Remote key not found for {sample.id}, will search")
                 sample.backup.remote_keys = [None, None]
             for f_idx, fastq in enumerate(sample.fastq_paths):
-                local_path = config.iris.fastq_temp / Path(fastq).name
-                remote_key = (
+                remote_key: Optional[str] = (
                     sample.backup.remote_keys[f_idx]
                     if "remote_keys" in sample.backup
                     else None
                 )
+
+                local_path = config.iris.fastq_temp / Path(fastq).name
+                while local_path.suffix:
+                    local_path = local_path.stem
                 _in, _out = mp.Pipe()
                 proc = mp.Process(
                     target=_fetch,
