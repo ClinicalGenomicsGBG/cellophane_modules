@@ -311,8 +311,8 @@ class SlimsSamples(data.Samples[SlimsSample]):
 
 @modules.pre_hook(label="SLIMS Fetch", priority=0)
 def slims_samples(
-    config: cfg.Config,
     samples: data.Samples,
+    config: cfg.Config,
     logger: LoggerAdapter,
     **_,
 ) -> Optional[SlimsSamples]:
