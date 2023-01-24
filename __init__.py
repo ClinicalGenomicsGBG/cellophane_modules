@@ -70,8 +70,8 @@ def _fetch(
 
 @modules.pre_hook(label="HCP", priority=10)
 def hcp_fetch(
-    config: cfg.Config,
     samples: data.Samples,
+    config: cfg.Config,
     logger: LoggerAdapter,
     **_,
 ) -> data.Samples:
