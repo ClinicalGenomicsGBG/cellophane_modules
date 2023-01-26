@@ -105,8 +105,8 @@ def hcp_fetch(
                 )
 
                 local_path = config.iris.fastq_temp / Path(fastq).name
-                while local_path.suffix:
-                    local_path = local_path.stem
+                while Path(local_path).suffix:
+                    local_path = local_path.with_suffix("")
                 _in, _out = mp.Pipe()
                 proc = mp.Process(
                     target=_fetch,
