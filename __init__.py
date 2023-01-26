@@ -309,7 +309,7 @@ class SlimsSamples(data.Samples[SlimsSample]):
                 raise ValueError(f"Invalid state: {state}")
 
 
-@modules.pre_hook(label="SLIMS Fetch", priority=0)
+@modules.pre_hook(label="SLIMS Fetch Samples", priority=0)
 def slims_samples(
     samples: data.Samples,
     config: cfg.Config,
@@ -319,7 +319,7 @@ def slims_samples(
     """Load novel samples from SLIMS."""
 
     if samples:
-        logger.info("Samples already loaded")
+        logger.debug("Samples already loaded")
         return None
 
     elif config.slims is not None:
@@ -332,6 +332,7 @@ def slims_samples(
 
         if config.slims.sample_id:
             logger.info("Looking for samples by ID")
+            logger.debug(f"ID(s): {config.slims.sample_id}")
             samples = SlimsSamples.from_ids(
                 connection=slims_connection,
                 ids=config.slims.sample_id,
@@ -358,12 +359,6 @@ def slims_samples(
             logger.error("No analysis configured")
             return None
 
-        if config.slims.dry_run:
-            logger.info("Dry run - Not adding bioinformatics content")
-        else:
-            logger.info("Creating bioinformatics objects")
-            samples.add_bioinformatics(config.slims.analysis_pk)
-            samples.set_bioinformatics_state("running")
         return samples
 
     else:
@@ -371,7 +366,25 @@ def slims_samples(
         return None
 
 
-@modules.post_hook(label="SLIMS Update")
+@modules.pre_hook(label="SLIMS Add Bioinformatics")
+def slims_bioinformatics(
+    samples: data.Samples,
+    config: cfg.Config,
+    logger: LoggerAdapter,
+    **_,
+) -> None:
+    """Load novel samples from SLIMS."""
+    if config.slims.dry_run:
+        logger.debug("Dry run - Not adding bioinformatics")
+    elif isinstance(samples, SlimsSamples):
+        logger.info("Adding bioinformatics content")
+        samples.add_bioinformatics(config.slims.analysis_pk)
+        samples.set_bioinformatics_state("running")
+    else:
+        logger.debug("Samples not from SLIMS")
+
+
+@modules.post_hook(label="SLIMS Update Bioinformatics")
 def slims_update(
     config: cfg.Config,
     samples: SlimsSamples,
@@ -383,7 +396,7 @@ def slims_update(
     if config.slims.dry_run:
         logger.info("Dry run - Not updating SLIMS")
     elif isinstance(samples, SlimsSamples):
-        logger.info("Updating bioinformatics state")
+        logger.info("Updating bioinformatics")
         pks = {s.pk for s in samples}
         collect = {pk: [*filter(lambda s: s.pk == pk, samples)] for pk in pks}
 
