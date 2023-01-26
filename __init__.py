@@ -1,10 +1,10 @@
 """Module for getting samples from SLIMS"""
 
-from functools import cached_property, wraps
+from functools import cached_property
 from json import loads
 from logging import LoggerAdapter
 from time import time
-from typing import Callable, Optional
+from typing import Optional
 
 from humanfriendly import parse_timespan
 from slims.criteria import (
