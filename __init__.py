@@ -43,7 +43,7 @@ def _fetch(
     else:
         raise SystemExit(1)
 
-    if not local_path.exists():
+    if not _local_path.exists():
         hcpm.download_file(
             _remote_key,
             local_path=str(_local_path),
@@ -51,8 +51,8 @@ def _fetch(
             force=True,
         )
 
-    if local_path.suffix == ".fasterq":
-        if not local_path.with_suffix(".fastq.gz").exists():
+    if _local_path.suffix == ".fasterq":
+        if not _local_path.with_suffix(".fastq.gz").exists():
             sge.submit(
                 str(Path(__file__).parent / "scripts" / "petasuite.sh"),
                 f"-d -f -t {config.petasuite.sge_slots} {_local_path}",
