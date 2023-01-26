@@ -27,52 +27,48 @@ def _fetch(
         bucket="data",  # FIXME: make this configurable
     )
 
-    if remote_key is None:
-        _remote_key = Path(local_path.name).stem
-        while Path(_remote_key).suffix:
-            _remote_key = Path(_remote_key).stem
+    _local_path = local_path
+    while Path(_local_path).suffix:
+        _local_path = _local_path.with_suffix("")
 
-        remote = hcpm.search_objects(_remote_key)
+    if (_remote_key := remote_key) is None:
+        remote = hcpm.search_objects(_local_path.name)
         if remote is not None and len(remote) == 1:
             _remote_key = remote[0].key
         else:
             raise SystemExit(1)
-    else:
-        _remote_key = remote_key
 
     if (suffix := Path(_remote_key).suffix) in (".fasterq", ".fastq", ".fastq.gz"):
-        local_path = local_path.with_suffix(suffix)
+        _local_path = _local_path.with_suffix(suffix)
     else:
         raise SystemExit(1)
 
-    if not local_path.exists():
+    if not _local_path.exists():
         hcpm.download_file(
-            remote_key,
-            local_path=str(local_path),
+            _remote_key,
+            local_path=str(_local_path),
             callback=False,
             force=True,
         )
 
-    if (
-        local_path.suffix == ".fasterq"
-        and not local_path.with_suffix(".fastq.gz").exists()
-    ):
-        sge.submit(
-            str(Path(__file__).parent / "scripts" / "petasuite.sh"),
-            f"-d -f -t {config.petasuite.sge_slots} {local_path}",
-            env={"_MODULES_INIT": config.modules_init},
-            queue=config.petasuite.sge_queue,
-            pe=config.petasuite.sge_pe,
-            slots=config.petasuite.sge_slots,
-            name="petasuite",
-            stderr=config.logdir / "petasuite.err",
-            stdout=config.logdir / "petasuite.out",
-            cwd=local_path.parent,
-            check=True,
-        )
-        local_path = local_path.with_suffix(".fastq.gz")
+    if _local_path.suffix == ".fasterq":
+        if not _local_path.with_suffix(".fastq.gz").exists():
+            sge.submit(
+                str(Path(__file__).parent / "scripts" / "petasuite.sh"),
+                f"-d -f -t {config.petasuite.sge_slots} {_local_path}",
+                env={"_MODULES_INIT": config.modules_init},
+                queue=config.petasuite.sge_queue,
+                pe=config.petasuite.sge_pe,
+                slots=config.petasuite.sge_slots,
+                name="petasuite",
+                stderr=config.logdir / "petasuite.err",
+                stdout=config.logdir / "petasuite.out",
+                cwd=local_path.parent,
+                check=True,
+            )
+        _local_path = _local_path.with_suffix(".fastq.gz")
 
-    pipe.send(local_path)
+    pipe.send(_local_path)
     pipe.close()
 
 
@@ -105,8 +101,7 @@ def hcp_fetch(
                 )
 
                 local_path = config.iris.fastq_temp / Path(fastq).name
-                while Path(local_path).suffix:
-                    local_path = local_path.with_suffix("")
+
                 _in, _out = mp.Pipe()
                 proc = mp.Process(
                     target=_fetch,
