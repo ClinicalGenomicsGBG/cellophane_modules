@@ -29,7 +29,7 @@ def _fetch(
 
     _local_path = local_path
     while Path(_local_path).suffix:
-        _local_path = local_path.with_suffix("")
+        _local_path = _local_path.with_suffix("")
 
     if (_remote_key := remote_key) is None:
         remote = hcpm.search_objects(_local_path.name)
