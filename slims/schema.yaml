@@ -19,6 +19,7 @@ properties:
       password:
         description: SLIMS password
         type: string
+        secret: true
       url:
         description: SLIMS URL
         type: string
