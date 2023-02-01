@@ -141,6 +141,7 @@ class SlimsSample(data.Sample):
             record=record,
             id=record.cntn_id.value,
             pk=record.pk(),
+            run=record.cntn_cstm_runTag.value,
             bioinformatics=None,
             **kwargs,
         )
