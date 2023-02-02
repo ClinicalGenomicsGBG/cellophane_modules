@@ -310,7 +310,7 @@ class SlimsSamples(data.Samples[SlimsSample]):
                 raise ValueError(f"Invalid state: {state}")
 
 
-@modules.pre_hook(label="SLIMS Fetch Samples", priority=0)
+@modules.pre_hook(label="SLIMS Fetch", priority=0)
 def slims_samples(
     samples: data.Samples,
     config: cfg.Config,
@@ -367,7 +367,7 @@ def slims_samples(
         return None
 
 
-@modules.pre_hook(label="SLIMS Add Bioinformatics")
+@modules.pre_hook(label="SLIMS Add")
 def slims_bioinformatics(
     samples: data.Samples,
     config: cfg.Config,
@@ -385,7 +385,7 @@ def slims_bioinformatics(
         logger.debug("Samples not from SLIMS")
 
 
-@modules.post_hook(label="SLIMS Update Bioinformatics")
+@modules.post_hook(label="SLIMS Update")
 def slims_update(
     config: cfg.Config,
     samples: SlimsSamples,
