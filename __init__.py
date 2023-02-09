@@ -61,8 +61,8 @@ def _fetch(
                 pe=config.petasuite.sge_pe,
                 slots=config.petasuite.sge_slots,
                 name="petasuite",
-                stderr=config.logdir / "petasuite.err",
-                stdout=config.logdir / "petasuite.out",
+                stderr=config.logdir / f"petasuite.{local_path.name}.err",
+                stdout=config.logdir / f"petasuite.{local_path.name}.out",
                 cwd=local_path.parent,
                 check=True,
             )
