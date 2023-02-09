@@ -19,8 +19,8 @@ def _fetch(
     pipe: Connection,
     remote_key: Optional[str] = None,
 ) -> None:
-    sys.stdout = open(os.devnull, "w", encoding="utf-8")
-    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+    sys.stdout = open(config.logdir / f"iris.{local_path.name}.out", "w", encoding="utf-8")
+    sys.stderr = open(config.logdir / f"iris.{local_path.name}.err", "w", encoding="utf-8")
 
     hcpm = hcp.HCPManager(
         credentials_path=config.iris.credentials,
@@ -36,11 +36,13 @@ def _fetch(
         if remote is not None and len(remote) == 1:
             _remote_key = remote[0].key
         else:
+            print(f"Could not find remote key for {local_path}")
             raise SystemExit(1)
 
     if (suffix := Path(_remote_key).suffix) in (".fasterq", ".fastq", ".fastq.gz"):
         _local_path = _local_path.with_suffix(suffix)
     else:
+        print(f"Could not determine suffix for {local_path}")
         raise SystemExit(1)
 
     if not _local_path.exists():
@@ -61,8 +63,8 @@ def _fetch(
                 pe=config.petasuite.sge_pe,
                 slots=config.petasuite.sge_slots,
                 name="petasuite",
-                stderr=config.logdir / "petasuite.err",
-                stdout=config.logdir / "petasuite.out",
+                stderr=config.logdir / f"petasuite.{local_path.name}.err",
+                stdout=config.logdir / f"petasuite.{local_path.name}.out",
                 cwd=local_path.parent,
                 check=True,
             )
