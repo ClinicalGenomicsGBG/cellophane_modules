@@ -55,7 +55,7 @@ def _extract_callback(
 
 
 @modules.pre_hook(label="petagene", priority=15)
-def hcp_fetch(
+def petagene_extract(
     samples: data.Samples,
     config: cfg.Config,
     logger: LoggerAdapter,
