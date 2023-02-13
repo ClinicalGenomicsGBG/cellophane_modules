@@ -347,30 +347,26 @@ def slims_samples(
 
         if samples:
             logger.debug("Augmenting existing samples with SLIMS data")
-            _slims_samples = {
-                sample.id: _samples
-                for _samples in
-                SlimsSamples.from_ids(
-                    connection=slims_connection,
-                    ids=[s.id for s in samples],
-                    analysis=config.slims.analysis_pk
-                )
-            }
+            _slims_samples = SlimsSamples.from_ids(
+                connection=slims_connection,
+                ids=[s.id for s in samples],
+                analysis=config.slims.analysis_pk
+            )
 
             _return_samples = SlimsSamples()
             for sample in samples:
-                if sample.id in _slims_samples:
-                    _ss = _slims_samples[sample.id]):
-                    if len(_ss := _slims_samples[sample.id]) > 1 and "pk" in sample:
-                        _slims_samples[sample.id] = [s for s in _ss if s.pk == sample.pk]
-                    if len(_ss := _slims_samples[sample.id]) > 1 and "run" in sample:
-                        _slims_samples[sample.id] = [s for s in _ss if s.run == sample.run]
-                    if len(_ss := _slims_samples[sample.id]) > 1:
-                        logger.warning(f"Multiple SLIMS samples found for {sample.id}, not adding SLIMS data")
-                        _return_samples.append(SlimsSample(id=sample.pop("id"), **sample))
-                    else:
-                        _data = _ss[0] | sample
-                        _return_samples.append(SlimsSample(id=_data.pop("id"), pk=_data.pop("pk"), **_data))
+                _ss = [s for s in _slims_samples  if s.id == sample.id]:
+                if len(_ss) > 1 and "pk" in sample:
+                    _ss = [s for s in _ss if s.pk == sample.pk]
+                elif len(_ss) > 1 and "run" in sample:
+                    _ss = [s for s in _ss if s.run == sample.run]
+                
+                if len(_ss) > 1:
+                    logger.warning(f"Multiple SLIMS samples found for {sample.id}, not adding SLIMS data")
+                    _return_samples.append(SlimsSample(id=sample.pop("id"), **sample))
+                else:
+                    _data = _ss[0] | sample
+                    _return_samples.append(SlimsSample(id=_data.pop("id"), pk=_data.pop("pk"), **_data))
 
 
         elif config.slims.sample_id:
@@ -411,7 +407,7 @@ def slims_samples(
 
 
 @modules.pre_hook(label="SLIMS Add")
-def slims_bioinformatics(
+def slims_bioinformatics(
     samples: data.Samples,
     config: cfg.Config,
     logger: LoggerAdapter,
