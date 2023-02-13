@@ -68,7 +68,7 @@ def petagene_extract(
             for f_idx, fastq in enumerate(sample.fastq_paths):
                 if Path(fastq).exists() and Path(fastq).suffix == ".fasterq":
                     fasterq_path = Path(fastq)
-                    extract_path = fasterq_path.with_suffix("fastq.gz")
+                    extract_path = fasterq_path.with_suffix(".fastq.gz")
                     if extract_path.exists():
                         logger.debug(f"Extracted file found for {sample.id}")
                         sample.fastq_paths[f_idx] = extract_path
