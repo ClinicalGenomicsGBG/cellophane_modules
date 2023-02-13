@@ -1,0 +1,22 @@
+type: object
+properties:
+  modules_init:
+    type: path
+    description: Path to modules init script
+
+  petagene:
+    type: object
+    properties:
+      sge_queue:
+        type: string
+        description: SGE queue for petasuite
+      sge_pe:
+        type: string
+        description: SGE parallel environment for petasuite
+      sge_slots:
+        type: integer
+        description: SGE slots (threads) for petasuite
+    required:
+      - sge_queue
+      - sge_pe
+      - sge_slots
