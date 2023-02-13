@@ -1,12 +1,11 @@
 """Module for fetching files from HCP."""
 
-import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor, Future
 import os
 import sys
 from functools import partial
 from logging import LoggerAdapter
 from pathlib import Path
-from typing import Optional
 
 from cellophane import cfg, data, modules, sge
 
@@ -35,9 +34,8 @@ def _extract(
 
 
 def _extract_callback(
-    exception: Optional[Exception],
+    future: Future,
     /,
-    config: cfg.Config,
     logger: LoggerAdapter,
     samples: data.Samples,
     fasterq_path: Path,
@@ -45,12 +43,11 @@ def _extract_callback(
     s_idx: int,
     f_idx: int,
 ):
-    if exception is not None:
-        logger.error(
-            f"Failed to extract {fasterq_path} ({exception})",
-        )
+    if (exception := future.exception()) is not None:
+        logger.error(f"Failed to extract {fasterq_path} ({exception})")
         samples[s_idx].fastq_paths[f_idx] = None
     else:
+        logger.debug(f"Extracted {fasterq_path} to {extract_path}")
         samples[s_idx].fastq_paths[f_idx] = extract_path
 
 
@@ -63,7 +60,7 @@ def petagene_extract(
 ) -> data.Samples:
     """Extract petagene fasterq files."""
 
-    with mp.Pool(config.petagene.parallel) as pool:
+    with ProcessPoolExecutor(config.petagene.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             for f_idx, fastq in enumerate(sample.fastq_paths):
                 if Path(fastq).exists() and Path(fastq).suffix == ".fasterq":
@@ -74,29 +71,29 @@ def petagene_extract(
                         sample.fastq_paths[f_idx] = extract_path
                         continue
                     else:
-                        callback = partial(
-                            _extract_callback,
-                            config=config,
-                            logger=logger,
-                            samples=samples,
-                            fasterq_path=fasterq_path,
-                            extract_path=extract_path,
-                            s_idx=s_idx,
-                            f_idx=f_idx,
+                        pool.submit(
+                            sge.submit,
+                            str(Path(__file__).parent / "scripts" / "petasuite.sh"),
+                            f"-d -f -t {config.petagene.sge_slots} {fasterq_path}",
+                            env={"_MODULES_INIT": config.modules_init},
+                            queue=config.petagene.sge_queue,
+                            pe=config.petagene.sge_pe,
+                            slots=config.petagene.sge_slots,
+                            name="petagene",
+                            stderr=config.logdir / f"{extract_path.name}.petagene.err",
+                            stdout=config.logdir / f"{extract_path.name}.petagene.out",
+                            cwd=fasterq_path.parent,
+                            check=True,
+                        ).add_done_callback(
+                            partial(
+                                _extract_callback,
+                                logger=logger,
+                                samples=samples,
+                                fasterq_path=fasterq_path,
+                                extract_path=extract_path,
+                                s_idx=s_idx,
+                                f_idx=f_idx,
+                            )
                         )
-
-                        pool.apply_async(
-                            _extract,
-                            kwds={
-                                "config": config,
-                                "fasterq_path": fasterq_path,
-                                "extract_path": extract_path,
-                            },
-                            callback=callback,
-                            error_callback=callback,
-                        )
-
-        pool.close()
-        pool.join()
 
     return samples.__class__([s for s in samples if s is not None])
