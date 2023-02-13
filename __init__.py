@@ -94,7 +94,7 @@ def hcp_fetch(
                 for f_idx, local_key in enumerate(sample.fastq_paths):
                     remote_key = sample.backup.remote_keys[f_idx]
                     _local_key = local_key or remote_key or f"{sample.id}_{f_idx}"
-                    local_path = (config.iris.fastq_temp / Path(_local_key).name)
+                    local_path = config.iris.fastq_temp / Path(_local_key).name
 
                     callback = partial(
                         _fetch_callback,
