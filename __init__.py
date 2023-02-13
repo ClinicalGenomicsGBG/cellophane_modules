@@ -61,50 +61,40 @@ def petagene_extract(
     logger: LoggerAdapter,
     **_,
 ) -> data.Samples:
-    """Fetch files from HCP."""
+    """Extract petagene fasterq files."""
 
     with mp.Pool(config.petagene.parallel) as pool:
         for s_idx, sample in enumerate(samples):
-            if sample.fastq_paths is not None and all(
-                Path(p).exists() for p in sample.fastq_paths
-            ):
-                logger.debug(f"Files found for {sample.id} {sample.fastq_paths}")
-            else:
-                logger.info(f"Fetching files for {sample.id} from HCP")
-                if "remote_keys" not in sample.backup:
-                    logger.warning(f"Remote key not found for {sample.id}, will search")
-                    sample.backup.remote_keys = [None, None]
+            for f_idx, fastq in enumerate(sample.fastq_paths):
+                if Path(fastq).exists() and Path(fastq).suffix == ".fasterq":
+                    fasterq_path = Path(fastq)
+                    extract_path = fasterq_path.with_suffix("fastq.gz")
+                    if extract_path.exists():
+                        logger.debug(f"Extracted file found for {sample.id}")
+                        sample.fastq_paths[f_idx] = extract_path
+                        continue
+                    else:
+                        callback = partial(
+                            _extract_callback,
+                            config=config,
+                            logger=logger,
+                            samples=samples,
+                            fasterq_path=fasterq_path,
+                            extract_path=extract_path,
+                            s_idx=s_idx,
+                            f_idx=f_idx,
+                        )
 
-                for f_idx, fastq in enumerate(sample.fastq_paths):
-                    if Path(fastq).exists() and Path(fastq).suffix == ".fasterq":
-                        fasterq_path = Path(fastq)
-                        extract_path = fasterq_path.with_suffix("fastq.gz")
-                        if extract_path.exists():
-                            logger.debug(f"Extracted file found for {sample.id}")
-                            sample.fastq_paths[f_idx] = extract_path
-                            continue
-                        else:
-                            callback = partial(
-                                _extract_callback,
-                                config=config,
-                                logger=logger,
-                                samples=samples,
-                                fasterq_path=fasterq_path,
-                                extract_path=extract_path,
-                                s_idx=s_idx,
-                                f_idx=f_idx,
-                            )
-
-                            pool.apply_async(
-                                _extract,
-                                kwds={
-                                    "config": config,
-                                    "fasterq_path": fasterq_path,
-                                    "extract_path": extract_path,
-                                },
-                                callback=callback,
-                                error_callback=callback,
-                            )
+                        pool.apply_async(
+                            _extract,
+                            kwds={
+                                "config": config,
+                                "fasterq_path": fasterq_path,
+                                "extract_path": extract_path,
+                            },
+                            callback=callback,
+                            error_callback=callback,
+                        )
 
         pool.close()
         pool.join()
