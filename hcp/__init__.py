@@ -66,7 +66,7 @@ def _fetch_callback(
         )
         samples[s_idx].fastq_paths[f_idx] = None
     else:
-        samples[s_idx].fastq_paths[f_idx] = local_path
+        samples[s_idx].fastq_paths[f_idx] = str(local_path)
 
 
 @modules.pre_hook(label="HCP", priority=10)
