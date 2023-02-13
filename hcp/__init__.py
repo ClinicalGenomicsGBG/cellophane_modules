@@ -79,26 +79,22 @@ def hcp_fetch(
     """Fetch files from HCP."""
     with mp.Pool(processes=config.iris.parallel) as pool:
         for s_idx, sample in enumerate(samples):
-            if sample.fastq_paths is not None and all(
-                Path(p).exists() for p in sample.fastq_paths
+            if all(
+                fastq is not None and Path(fastq).exists()
+                for fastq in sample.fastq_paths
             ):
-                logger.debug(
-                    f"Files found for {sample.id} ({','.join(sample.fastq_paths)})"
-                )
-            else:
+                logger.debug(f"Files found for {sample.id} {sample.fastq_paths}")
+
+            elif "remote_keys" in sample.backup:
                 logger.info(f"Fetching files for {sample.id} from HCP")
                 if "remote_keys" not in sample.backup:
                     logger.warning(f"Remote key not found for {sample.id}, will search")
-                    sample.backup.remote_keys = [None, None]
+                    sample.backup.remote_keys = [None] * len(sample.fastq_paths)
 
-                for f_idx, fastq in enumerate(sample.fastq_paths):
-                    remote_key: Optional[str] = (
-                        sample.backup.remote_keys[f_idx]
-                        if "remote_keys" in sample.backup
-                        else None
-                    )
-
-                    local_path = config.iris.fastq_temp / Path(fastq).name
+                for f_idx, local_key in enumerate(sample.fastq_paths):
+                    remote_key = sample.backup.remote_keys[f_idx]
+                    _local_key = local_key or remote_key or f"{sample.id}_{f_idx}"
+                    local_path = config.iris.fastq_temp / Path(_local_key).name
 
                     callback = partial(
                         _fetch_callback,
@@ -120,6 +116,8 @@ def hcp_fetch(
                         callback=callback,
                         error_callback=callback,
                     )
+            else:
+                logger.warning(f"Unable to fetch files for {sample.id} from HCP")
 
         pool.close()
         pool.join()
