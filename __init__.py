@@ -87,7 +87,6 @@ def petagene_extract(
                         ).add_done_callback(
                             partial(
                                 _extract_callback,
-                                config=config,
                                 logger=logger,
                                 samples=samples,
                                 fasterq_path=fasterq_path,
