@@ -47,7 +47,7 @@ def _extract_callback(
 ):
     if exception is not None:
         logger.error(
-            f"Failed to extract {fasterq_path}", exc_info=config.log_level == "DEBUG"
+            f"Failed to extract {fasterq_path} ({exception})",
         )
         samples[s_idx].fastq_paths[f_idx] = None
     else:
