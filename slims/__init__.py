@@ -1,5 +1,6 @@
 """Module for getting samples from SLIMS"""
 
+from copy import deepcopy
 from functools import cached_property
 from json import loads
 from logging import LoggerAdapter
@@ -148,12 +149,16 @@ class SlimsSample(data.Sample):
 
     @cached_property
     def _connection(self) -> Slims:
-        return Slims(
-            "cellophane",
-            url=self.record.slims_api.raw_url,
-            username=self.record.slims_api.username,
-            password=self.record.slims_api.password,
-        ) if self.record is not None else None
+        return (
+            Slims(
+                "cellophane",
+                url=self.record.slims_api.raw_url,
+                username=self.record.slims_api.username,
+                password=self.record.slims_api.password,
+            )
+            if self.record is not None
+            else None
+        )
 
     def add_bioinformatics(self, analysis: int):
         """Add a bioinformatics record to the sample"""
@@ -332,25 +337,32 @@ def slims_samples(
             _slims_samples = SlimsSamples.from_ids(
                 connection=slims_connection,
                 ids=[s.id for s in samples],
-                analysis=config.slims.analysis_pk
+                analysis=config.slims.analysis_pk,
             )
 
             _return_samples = SlimsSamples()
             for sample in samples:
-                _ss = [s for s in _slims_samples  if s.id == sample.id]
+                _ss = [s for s in _slims_samples if s.id == sample.id]
                 if len(_ss) > 1 and "pk" in sample:
                     _ss = [s for s in _ss if s.pk == sample.pk]
                 elif len(_ss) > 1 and "run" in sample:
                     _ss = [s for s in _ss if s.run == sample.run]
-                
+
                 if len(_ss) > 1:
-                    logger.warning(f"Multiple SLIMS samples found for {sample.id}, not adding SLIMS data")
+                    logger.warning(
+                        f"Multiple SLIMS samples found for {sample.id}, not adding SLIMS data"
+                    )
                     _return_samples.append(SlimsSample(id=sample.pop("id"), **sample))
                 else:
                     # FIXME: Why do the samples need to be unpacked?
                     _data = {**_ss[0]} | {**sample}
-                    _return_samples.append(SlimsSample(id=_data.pop("id"), pk=_data.pop("pk"), **_data))
-
+                    _return_samples.append(
+                        SlimsSample(
+                            id=_data.pop("id"),
+                            pk=_data.pop("pk"),
+                            **deepcopy(_data),
+                        )
+                    )
 
         elif config.slims.sample_id:
             logger.info("Looking for samples by ID")
@@ -365,7 +377,6 @@ def slims_samples(
                     logger.warning(f"FASTQ object for {sid} not found")
                 elif sum(s.id == sid for s in samples) > 1:
                     logger.warning(f"Multiple FASTQ objects found for {sid}")
-            
 
         elif "analysis_pk" in config:
             logger.info(
