@@ -65,7 +65,7 @@ def petagene_extract(
     
 
 
-    with mp.Pool(processes=config.iris_parallell) as pool:
+    with mp.Pool(-1) as pool:
         for s_idx, sample in enumerate(samples):
             if all(Path(p).exists() for p in sample.fastq_paths):
                 logger.debug(
