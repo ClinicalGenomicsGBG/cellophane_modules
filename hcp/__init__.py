@@ -73,7 +73,7 @@ def hcp_fetch(
     **_,
 ) -> data.Samples:
     """Fetch files from HCP."""
-    with mp.Pool(processes=config.iris_parallell) as pool:
+    with mp.Pool(processes=config.iris.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             if all(Path(p).exists() for p in sample.fastq_paths):
                 logger.debug(
