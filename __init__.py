@@ -68,9 +68,7 @@ def petagene_extract(
             if sample.fastq_paths is not None and all(
                 Path(p).exists() for p in sample.fastq_paths
             ):
-                logger.debug(
-                    f"Files found for {sample.id} ({','.join(sample.fastq_paths)})"
-                )
+                logger.debug(f"Files found for {sample.id} {sample.fastq_paths}")
             else:
                 logger.info(f"Fetching files for {sample.id} from HCP")
                 if "remote_keys" not in sample.backup:
