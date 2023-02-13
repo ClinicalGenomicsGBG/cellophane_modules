@@ -103,6 +103,7 @@ def hcp_fetch(
                             logger=logger,
                             samples=samples,
                             local_path=local_path,
+                            remote_key=remote_key,
                             s_idx=s_idx,
                             f_idx=f_idx,
                         )
