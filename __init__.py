@@ -56,7 +56,7 @@ def hcp_fetch(
     **_,
 ) -> data.Samples:
     """Fetch files from HCP."""
-    results: dict[Future, tuple[int, int, str]] = {}
+    results: dict[Future, tuple[int, int, str, str]] = {}
     with ProcessPoolExecutor(config.iris.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             if all(
@@ -82,7 +82,7 @@ def hcp_fetch(
                             config=config,
                             local_path=local_path,
                             remote_key=remote_key,
-                        ): (s_idx, f_idx, str(local_path))
+                        ): (s_idx, f_idx, str(local_path), remote_key)
                     }
             else:
                 logger.warning(f"No remote keys found for {sample.id}")
@@ -91,12 +91,12 @@ def hcp_fetch(
         pool.shutdown(wait=False)
 
     for future in as_completed(results.keys()):
-        s_idx, f_idx, local_path = results[future]
+        s_idx, f_idx, local, remote = results[future]
         if (exception := future.exception()) is not None:
-            logger.error(f"Failed to fetch {local_path} from HCP ({exception})")
+            logger.error(f"Failed to fetch {local} from HCP ({exception})")
             samples[s_idx].fastq_paths[f_idx] = None
         else:
-            logger.debug(f"Fetched {remote_key} to {local_path}")
-            samples[s_idx].fastq_paths[f_idx] = str(local_path)
+            logger.debug(f"Fetched {remote} to {local}")
+            samples[s_idx].fastq_paths[f_idx] = str(local)
 
     return samples.__class__([s for s in samples if s is not None])
