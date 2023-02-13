@@ -347,7 +347,8 @@ def slims_samples(
                     logger.warning(f"Multiple SLIMS samples found for {sample.id}, not adding SLIMS data")
                     _return_samples.append(SlimsSample(id=sample.pop("id"), **sample))
                 else:
-                    _data = _ss[0] | sample
+                    # FIXME: Why do the samples need to be unpacked?
+                    _data = {**_ss[0]} | {**sample}
                     _return_samples.append(SlimsSample(id=_data.pop("id"), pk=_data.pop("pk"), **_data))
 
 
