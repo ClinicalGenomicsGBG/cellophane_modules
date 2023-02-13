@@ -116,6 +116,8 @@ def hcp_fetch(
                         callback=callback,
                         error_callback=callback,
                     )
+            else:
+                logger.warning(f"Unable to fetch files for {sample.id} from HCP")
 
         pool.close()
         pool.join()
