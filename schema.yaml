@@ -13,23 +13,10 @@ properties:
       fastq_temp:
         type: path
         description: Temporary directory for fastq files
+      parallel:
+        type: integer
+        description: Number of parallel HCP conenctions
+        default: 4
     required:
       - credentials
       - fastq_temp
-
-  petasuite:
-    type: object
-    properties:
-      sge_queue:
-        type: string
-        description: SGE queue for petasuite
-      sge_pe:
-        type: string
-        description: SGE parallel environment for petasuite
-      sge_slots:
-        type: integer
-        description: SGE slots (threads) for petasuite
-    required:
-      - sge_queue
-      - sge_pe
-      - sge_slots
