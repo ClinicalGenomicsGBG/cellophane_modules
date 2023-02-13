@@ -355,7 +355,7 @@ def slims_samples(
 
             _return_samples = SlimsSamples()
             for sample in samples:
-                _ss = [s for s in _slims_samples  if s.id == sample.id]:
+                _ss = [s for s in _slims_samples  if s.id == sample.id]
                 if len(_ss) > 1 and "pk" in sample:
                     _ss = [s for s in _ss if s.pk == sample.pk]
                 elif len(_ss) > 1 and "run" in sample:
