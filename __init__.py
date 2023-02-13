@@ -1,12 +1,11 @@
 """Module for fetching files from HCP."""
 
-from concurrent.futures import ProcessPoolExecutor, Future
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
 import os
 import sys
 from functools import partial
 from logging import LoggerAdapter
 from pathlib import Path
-from copy import copy
 
 from cellophane import cfg, data, modules, sge
 
@@ -34,24 +33,6 @@ def _extract(
     )
 
 
-def _extract_callback(
-    future: Future,
-    /,
-    logger: LoggerAdapter,
-    samples: data.Samples,
-    fasterq_path: Path,
-    extract_path: Path,
-    s_idx: int,
-    f_idx: int,
-):
-    if (exception := future.exception()) is not None:
-        logger.error(f"Failed to extract {fasterq_path} ({exception})")
-        samples[s_idx].fastq_paths[f_idx] = None
-    else:
-        logger.debug(f"Extracted {fasterq_path} to {extract_path}")
-        samples[s_idx].fastq_paths[f_idx] = extract_path
-
-
 @modules.pre_hook(label="petagene", priority=15)
 def petagene_extract(
     samples: data.Samples,
@@ -61,6 +42,7 @@ def petagene_extract(
 ) -> data.Samples:
     """Extract petagene fasterq files."""
 
+    results: dict[Future, tuple[int, int, str, str]] = {}
     with ProcessPoolExecutor(config.petagene.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             for f_idx, fastq in enumerate(sample.fastq_paths):
@@ -73,21 +55,24 @@ def petagene_extract(
                         continue
                     else:
                         logger.debug(f"Extracting {fasterq_path} to {extract_path}")
-                        pool.submit(
-                            _extract,
-                            fasterq_path=copy(fasterq_path),
-                            extract_path=copy(extract_path),
-                            config=config,
-                        ).add_done_callback(
-                            partial(
-                                _extract_callback,
-                                logger=logger,
-                                samples=samples,
-                                fasterq_path=copy(fasterq_path),
-                                extract_path=copy(extract_path),
-                                s_idx=s_idx,
-                                f_idx=f_idx,
-                            )
-                        )
+                        results |= {
+                            pool.submit(
+                                _extract,
+                                fasterq_path=fasterq_path,
+                                extract_path=extract_path,
+                                config=config,
+                            ): (s_idx, f_idx, str(extract_path), str(fasterq_path))
+                        }
+
+        pool.shutdown(wait=False)
+
+    for future in as_completed(results.keys()):
+        s_idx, f_idx, extract, fasterq = results[future]
+        if (exception := future.exception()) is not None:
+            logger.error(f"Failed to extract {fasterq} ({exception})")
+            samples[s_idx].fastq_paths[f_idx] = None
+        else:
+            logger.debug(f"Extracted {fasterq} to {extract}")
+            samples[s_idx].fastq_paths[f_idx] = extract_path
 
     return samples.__class__([s for s in samples if s is not None])
