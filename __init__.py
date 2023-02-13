@@ -71,6 +71,7 @@ def petagene_extract(
                         sample.fastq_paths[f_idx] = extract_path
                         continue
                     else:
+                        logger.debug(f"Extracting {fasterq_path} to {extract_path}")
                         pool.submit(
                             sge.submit,
                             str(Path(__file__).parent / "scripts" / "petasuite.sh"),
