@@ -16,6 +16,11 @@ properties:
       sge_slots:
         type: integer
         description: SGE slots (threads) for petasuite
+        default: 40
+      parallel:
+        type: integer
+        description: Maximum number of petasuite jobs to submit at once
+        default: 100
     required:
       - sge_queue
       - sge_pe

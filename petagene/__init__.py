@@ -63,7 +63,7 @@ def petagene_extract(
 ) -> data.Samples:
     """Fetch files from HCP."""
 
-    with mp.Pool(-1) as pool:
+    with mp.Pool(config.petagene.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             if sample.fastq_paths is not None and all(
                 Path(p).exists() for p in sample.fastq_paths
