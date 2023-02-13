@@ -18,8 +18,12 @@ def _fetch(
     local_path: Path,
     remote_key: Optional[str] = None,
 ) -> None:
-    sys.stdout = open(config.logdir / f"iris.{local_path.name}.out", "w", encoding="utf-8")
-    sys.stderr = open(config.logdir / f"iris.{local_path.name}.err", "w", encoding="utf-8")
+    sys.stdout = open(
+        config.logdir / f"iris.{local_path.name}.out", "w", encoding="utf-8"
+    )
+    sys.stderr = open(
+        config.logdir / f"iris.{local_path.name}.err", "w", encoding="utf-8"
+    )
 
     hcpm = hcp.HCPManager(
         credentials_path=config.iris.credentials,
@@ -53,12 +57,12 @@ def _fetch_callback(
     samples: data.Samples,
     local_path: Path,
     s_idx: int,
-    f_idx: int
+    f_idx: int,
 ):
     if exception is not None:
         logger.error(
             f"Failed to fetch {local_path} from HCP",
-            exc_info=config.log_level == "DEBUG"
+            exc_info=config.log_level == "DEBUG",
         )
         samples[s_idx].fastq_paths[f_idx] = None
     else:
@@ -75,7 +79,9 @@ def hcp_fetch(
     """Fetch files from HCP."""
     with mp.Pool(processes=config.iris.parallel) as pool:
         for s_idx, sample in enumerate(samples):
-            if all(Path(p).exists() for p in sample.fastq_paths):
+            if sample.fastq_paths is not None and all(
+                Path(p).exists() for p in sample.fastq_paths
+            ):
                 logger.debug(
                     f"Files found for {sample.id} ({','.join(sample.fastq_paths)})"
                 )
@@ -114,7 +120,7 @@ def hcp_fetch(
                         callback=callback,
                         error_callback=callback,
                     )
-        
+
         pool.close()
         pool.join()
 
