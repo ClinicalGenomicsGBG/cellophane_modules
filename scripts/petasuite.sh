@@ -8,5 +8,6 @@ if [[ -d "${_MODULES_INIT}" ]]; then
 else
     source "${_MODULES_INIT}"
     module load petasuite
+    echo "CMD: petasuite $@"
     petasuite $@
 fi
