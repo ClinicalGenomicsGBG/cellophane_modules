@@ -21,14 +21,14 @@ def _extract(
 
     sge.submit(
         str(Path(__file__).parent / "scripts" / "petasuite.sh"),
-        f"-d -f -t {config.petasuite.sge_slots} {fasterq_path}",
+        f"-d -f -t {config.petagene.sge_slots} {fasterq_path}",
         env={"_MODULES_INIT": config.modules_init},
-        queue=config.petasuite.sge_queue,
-        pe=config.petasuite.sge_pe,
-        slots=config.petasuite.sge_slots,
-        name="petasuite",
-        stderr=config.logdir / f"{extract_path}.petasuite.err",
-        stdout=config.logdir / f"{extract_path}.petasuite.out",
+        queue=config.petagene.sge_queue,
+        pe=config.petagene.sge_pe,
+        slots=config.petagene.sge_slots,
+        name="petagene",
+        stderr=config.logdir / f"{extract_path.name}.petagene.err",
+        stdout=config.logdir / f"{extract_path.name}.petagene.out",
         cwd=fasterq_path.parent,
         check=True,
     )
