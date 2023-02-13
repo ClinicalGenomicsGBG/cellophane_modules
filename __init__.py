@@ -1,6 +1,6 @@
 """Module for fetching files from HCP."""
 
-from concurrent.futures import ProcessPoolExecutor, Future
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
 import sys
 from functools import partial
 from logging import LoggerAdapter
@@ -47,23 +47,6 @@ def _fetch(
             force=True,
         )
 
-def _fetch_callback(
-    future: Future,
-    /,
-    logger: LoggerAdapter,
-    samples: data.Samples,
-    remote_key: str,
-    local_path: Path,
-    s_idx: int,
-    f_idx: int,
-):
-    if (exception := future.exception()) is not None:
-        logger.error(f"Failed to fetch {local_path} from HCP ({exception})")
-        samples[s_idx].fastq_paths[f_idx] = None
-    else:
-        logger.debug(f"Fetched {remote_key} to {local_path}")
-        samples[s_idx].fastq_paths[f_idx] = str(local_path)
-
 
 @modules.pre_hook(label="HCP", priority=10)
 def hcp_fetch(
@@ -73,6 +56,7 @@ def hcp_fetch(
     **_,
 ) -> data.Samples:
     """Fetch files from HCP."""
+    results: dict[Future, tuple[int, int, str]] = {}
     with ProcessPoolExecutor(config.iris.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             if all(
@@ -92,25 +76,27 @@ def hcp_fetch(
                     _local_key = local_key or remote_key or f"{sample.id}_{f_idx}"
                     local_path = config.iris.fastq_temp / Path(_local_key).name
 
-                    pool.submit(
-                        _fetch,
-                        config=config,
-                        local_path=local_path,
-                        remote_key=remote_key,
-                    ).add_done_callback(
-                        partial(
-                            _fetch_callback,
-                            logger=logger,
-                            samples=samples,
+                    results |= {
+                        pool.submit(
+                            _fetch,
+                            config=config,
                             local_path=local_path,
                             remote_key=remote_key,
-                            s_idx=s_idx,
-                            f_idx=f_idx,
-                        )
-                    )
+                        ): (s_idx, f_idx, str(local_path))
+                    }
             else:
-                logger.warning(f"Unable to fetch files for {sample.id} from HCP")
+                logger.warning(f"No remote keys found for {sample.id}")
+                samples[s_idx] = None
 
+        pool.shutdown(wait=False)
 
+    for future in as_completed(results.keys()):
+        s_idx, f_idx, local_path = results[future]
+        if (exception := future.exception()) is not None:
+            logger.error(f"Failed to fetch {local_path} from HCP ({exception})")
+            samples[s_idx].fastq_paths[f_idx] = None
+        else:
+            logger.debug(f"Fetched {remote_key} to {local_path}")
+            samples[s_idx].fastq_paths[f_idx] = str(local_path)
 
     return samples.__class__([s for s in samples if s is not None])
