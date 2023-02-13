@@ -134,27 +134,9 @@ class SlimsSample(data.Sample):
     run: str
     backup: Optional[data.Container]
 
-    def __init__(
-        self,
-        id: str,
-        run: Optional[str] = None,
-        pk: Optional[str] = None,
-        record: Optional[Record] = None,
-        backup: Optional[data.Container] = None,
-        **kwargs,
-    ):
-        super().__init__(
-            id=id,
-            pk=pk,
-            run=run,
-            bioinformatics=None,
-            backup=backup,
-            record=record,
-            **kwargs,
-        )
-
     @classmethod
     def from_record(cls, record: Record, **kwargs):
+        """Create a sample from a SLIMS fastq record"""
         return cls(
             id=record.cntn_id.value,
             pk=record.pk(),
