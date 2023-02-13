@@ -73,18 +73,10 @@ def petagene_extract(
                     else:
                         logger.debug(f"Extracting {fasterq_path} to {extract_path}")
                         pool.submit(
-                            sge.submit,
-                            str(Path(__file__).parent / "scripts" / "petasuite.sh"),
-                            f"-d -f -t {config.petagene.sge_slots} {fasterq_path}",
-                            env={"_MODULES_INIT": config.modules_init},
-                            queue=config.petagene.sge_queue,
-                            pe=config.petagene.sge_pe,
-                            slots=config.petagene.sge_slots,
-                            name="petagene",
-                            stderr=config.logdir / f"{extract_path.name}.petagene.err",
-                            stdout=config.logdir / f"{extract_path.name}.petagene.out",
-                            cwd=fasterq_path.parent,
-                            check=True,
+                            _extract,
+                            fasterq_path=fasterq_path,
+                            extract_path=extract_path,
+                            config=config,
                         ).add_done_callback(
                             partial(
                                 _extract_callback,
