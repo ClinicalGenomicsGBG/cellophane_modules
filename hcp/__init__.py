@@ -73,7 +73,7 @@ def hcp_fetch(
     **_,
 ) -> data.Samples:
     """Fetch files from HCP."""
-    with ProcessPoolExecutor(config.petagene.parallel) as pool:
+    with ProcessPoolExecutor(config.iris.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             if all(
                 fastq is not None and Path(fastq).exists()
