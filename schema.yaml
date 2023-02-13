@@ -4,7 +4,7 @@ properties:
     type: path
     description: Path to modules init script
 
-  petasuite:
+  petagene:
     type: object
     properties:
       sge_queue:
