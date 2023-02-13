@@ -100,7 +100,6 @@ def hcp_fetch(
                     ).add_done_callback(
                         partial(
                             _fetch_callback,
-                            config=config,
                             logger=logger,
                             samples=samples,
                             local_path=local_path,
