@@ -47,12 +47,12 @@ def _fetch(
             force=True,
         )
 
+
 def _fetch_callback(
     future: Future,
     /,
     logger: LoggerAdapter,
     samples: data.Samples,
-    remote_key: str,
     local_path: Path,
     s_idx: int,
     f_idx: int,
@@ -61,7 +61,7 @@ def _fetch_callback(
         logger.error(f"Failed to fetch {local_path} from HCP ({exception})")
         samples[s_idx].fastq_paths[f_idx] = None
     else:
-        logger.debug(f"Fetched {remote_key} to {local_path}")
+        logger.debug(f"Fetched {local_path}")
         samples[s_idx].fastq_paths[f_idx] = str(local_path)
 
 
@@ -88,7 +88,7 @@ def hcp_fetch(
                     sample.backup.remote_keys = [None] * len(sample.fastq_paths)
 
                 for f_idx, local_key in enumerate(sample.fastq_paths):
-                    remote_key = sample.backup.remote_keys[f_idx]
+                    remote_key: Optional[str] = sample.backup.remote_keys[f_idx]
                     _local_key = local_key or remote_key or f"{sample.id}_{f_idx}"
                     local_path = config.iris.fastq_temp / Path(_local_key).name
 
@@ -103,14 +103,11 @@ def hcp_fetch(
                             logger=logger,
                             samples=samples,
                             local_path=local_path,
-                            remote_key=remote_key,
                             s_idx=s_idx,
                             f_idx=f_idx,
                         )
                     )
             else:
                 logger.warning(f"Unable to fetch files for {sample.id} from HCP")
-
-
 
     return samples.__class__([s for s in samples if s is not None])
