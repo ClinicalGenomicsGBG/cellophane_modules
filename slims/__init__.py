@@ -349,9 +349,7 @@ def slims_samples(
                     _ss = [s for s in _ss if s.run == sample.run]
 
                 if len(_ss) > 1:
-                    logger.warning(
-                        f"Multiple SLIMS samples found for {sample.id}, not adding SLIMS data"
-                    )
+                    logger.warning(f"Multiple SLIMS samples found for {sample.id}")
                     _return_samples.append(SlimsSample(id=sample.pop("id"), **sample))
                 else:
                     # FIXME: Why do the samples need to be unpacked?
