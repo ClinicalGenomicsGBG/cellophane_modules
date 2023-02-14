@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "cellophane-modules"
+version = "0.0.1"
+description = "Collection of modules for cellophane wrappers"
+authors = ["Erik Demitz-Helin <erik.demitz-helin@gu.se>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+NGPIris = "^4.2.0"
+slims-python-api = "^6.8.0"
+humanfriendly = "^10.0"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.0.0"
+black = "^23.1.0"
+isort = "^5.12.0"
+flake8 = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
