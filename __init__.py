@@ -6,7 +6,7 @@ from typing import Optional
 from cellophane import cfg, sge
 
 
-def run_nextflow(
+def nextflow(
     main: Path,
     *args,
     config: cfg.Config,
