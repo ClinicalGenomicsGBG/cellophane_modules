@@ -22,7 +22,7 @@ def run_nextflow(
         str(Path(__file__).parent / "scripts" / "nextflow.sh"),
         f"-log {log}",
         (f"-config {config.nextflow.config}" if "config" in config.nextflow else ""),
-        f"run {config.rnaseq.nf_main}",
+        f"run {main}",
         "-ansi-log false" if not config.nextflow.ansi_log else "",
         "-resume" if config.nextflow.resume else "",
         f"-work-dir {config.nextflow.workdir}" if "workdir" in config.nextflow else "",
