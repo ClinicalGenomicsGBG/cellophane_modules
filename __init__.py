@@ -13,6 +13,10 @@ def run_nextflow(
     env: dict[str, str] = {},
     log: Optional[Path] = None,
     report: Optional[Path] = None,
+    workdir: Optional[Path] = None,
+    nf_config: Optional[Path] = None,
+    ansi_log: bool = False,
+    resume: bool = False,
     **kwargs,
 ):
     if "workdir" in config.nextflow:
@@ -21,11 +25,19 @@ def run_nextflow(
     sge.submit(
         str(Path(__file__).parent / "scripts" / "nextflow.sh"),
         f"-log {log}",
-        (f"-config {config.nextflow.config}" if "config" in config.nextflow else ""),
+        (
+            f"-config {config.nextflow.config}"
+            if "config" in config.nextflow
+            else nf_config or ""
+        ),
         f"run {main}",
-        "-ansi-log false" if not config.nextflow.ansi_log else "",
-        "-resume" if config.nextflow.resume else "",
-        f"-work-dir {config.nextflow.workdir}" if "workdir" in config.nextflow else "",
+        "-ansi-log false" if not ansi_log or config.nextflow.ansi_log else "",
+        "-resume" if resume or config.nextflow.resume else "",
+        (
+            f"-work-dir {config.nextflow.workdir}"
+            if "workdir" in config.nextflow
+            else workdir or ""
+        ),
         f"-with-report {report}" if report else "",
         f"-profile {config.nextflow.profile}",
         *args,
