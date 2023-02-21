@@ -8,7 +8,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        module: [hcp, slims, unpack]
+        module: [hcp, slims, unpack, nextflow]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master

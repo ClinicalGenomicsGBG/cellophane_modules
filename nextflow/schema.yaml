@@ -1,0 +1,44 @@
+type: object
+properties:
+  modules_init:
+    type: path
+    description: Path to modules init script
+
+  nextflow:
+    type: object
+    properties:
+      sge_queue:
+        type: string
+        description: SGE queue for nextflow manager
+      sge_pe:
+        type: string
+        description: SGE parallel environment for nextflow manager
+      sge_slots:
+        type: integer
+        description: SGE slots (threads) for nextflow manager
+      config:
+        type: path
+        description: Nextflow config file
+      profile:
+        type: string
+        description: Nextflow profile
+      workdir:
+        type: path
+        description: Nextflow work directory
+      cluster_options:
+        type: string
+        description: Nextflow cluster options
+      resume:
+        type: boolean
+        default: false
+        description: Resume previous nextflow run
+      ansi_log:
+        type: boolean
+        default: false
+        description: Enable ANSI log
+    required:
+      - sge_queue
+      - sge_pe
+      - sge_slots
+      - profile
+      - workdir
