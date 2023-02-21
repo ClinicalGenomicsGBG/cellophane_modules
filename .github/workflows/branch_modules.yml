@@ -8,7 +8,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        module: [hcp, slims, petagene]
+        module: [hcp, slims, unpack]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master

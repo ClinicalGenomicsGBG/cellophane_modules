@@ -4,22 +4,22 @@ properties:
     type: path
     description: Path to modules init script
 
-  petagene:
+  unpack:
     type: object
     properties:
       sge_queue:
         type: string
-        description: SGE queue for petasuite
+        description: SGE queue for decompression
       sge_pe:
         type: string
-        description: SGE parallel environment for petasuite
+        description: SGE parallel environment for decompression
       sge_slots:
         type: integer
-        description: SGE slots (threads) for petasuite
+        description: SGE slots (threads) for decompression
         default: 40
       parallel:
         type: integer
-        description: Maximum number of petasuite jobs to submit at once
+        description: Maximum number of decompression jobs to submit at once
         default: 100
     required:
       - sge_queue
