@@ -149,12 +149,16 @@ class SlimsSample(data.Sample):
 
     @cached_property
     def _connection(self) -> Optional[Slims]:
-        return Slims(
-            "cellophane",
-            url=self.record.slims_api.raw_url,
-            username=self.record.slims_api.username,
-            password=self.record.slims_api.password,
-        ) if self.record is not None else None
+        return (
+            Slims(
+                "cellophane",
+                url=self.record.slims_api.raw_url,
+                username=self.record.slims_api.username,
+                password=self.record.slims_api.password,
+            )
+            if self.record is not None
+            else None
+        )
 
     def add_bioinformatics(self, analysis: int):
         """Add a bioinformatics record to the sample"""
@@ -347,6 +351,15 @@ def slims_samples(
                 if len(_ss) > 1:
                     logger.warning(f"Multiple SLIMS samples found for {sample.id}")
                     _return_samples.append(SlimsSample(id=sample.pop("id"), **sample))
+                elif len(_ss) == 0:
+                    logger.warning(f"SLIMS sample not found for {sample.id}")
+                    _return_samples.append(
+                        SlimsSample(
+                            id=sample.pop("id"),
+                            pk=None,
+                            **deepcopy(sample),
+                        )
+                    )
                 else:
                     # FIXME: Why do the samples need to be unpacked?
                     _data = {**_ss[0]} | {**sample}
