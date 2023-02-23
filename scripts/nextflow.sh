@@ -10,8 +10,8 @@ _clean () {
     exit $code
 }
 
-module load nextflow
-HOME="$(pwd)" nextflow $@ & _nf_pid=$!
+module load $_NEXTFLOW_MODULE
+nextflow $@ & _nf_pid=$!
 
 trap _clean EXIT
 
