@@ -22,16 +22,9 @@ properties:
       profile:
         type: string
         description: Nextflow profile
-      workdir:
-        type: path
-        description: Nextflow work directory
       cluster_options:
         type: string
         description: Nextflow cluster options
-      resume:
-        type: boolean
-        default: false
-        description: Resume previous nextflow run
       ansi_log:
         type: boolean
         default: false
@@ -41,4 +34,3 @@ properties:
       - sge_pe
       - sge_slots
       - profile
-      - workdir
