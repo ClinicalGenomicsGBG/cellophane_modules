@@ -1,9 +1,5 @@
 type: object
 properties:
-  modules_init:
-    type: path
-    description: Path to modules init script
-
   nextflow:
     type: object
     properties:

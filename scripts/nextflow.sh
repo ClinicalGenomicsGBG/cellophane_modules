@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -e -o pipefail
 
 _clean () {
@@ -9,7 +10,6 @@ _clean () {
     exit $code
 }
 
-source ${_MODULES_INIT}
 module load nextflow
 HOME="$(pwd)" nextflow $@ & _nf_pid=$!
 
