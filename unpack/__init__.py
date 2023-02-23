@@ -31,7 +31,6 @@ def _extract(
     sge.submit(
         str(Path(__file__).parent / "scripts" / f"{method}.sh"),
         args,
-        env={"_MODULES_INIT": config.modules_init},
         queue=config.unpack.sge_queue,
         pe=config.unpack.sge_pe,
         slots=config.unpack.sge_slots,
@@ -61,7 +60,7 @@ def _extract_callback(
         samples[s_idx].fastq_paths[f_idx] = extract_path
 
 
-@modules.pre_hook(label="petagene", priority=15)
+@modules.pre_hook(label="unpack", priority=15)
 def petagene_extract(
     samples: data.Samples,
     config: cfg.Config,
@@ -70,7 +69,7 @@ def petagene_extract(
 ) -> data.Samples:
     """Extract petagene fasterq files."""
 
-    with ProcessPoolExecutor(config.petagene.parallel) as pool:
+    with ProcessPoolExecutor(config.unpack.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             for f_idx, fastq in enumerate(sample.fastq_paths):
                 if (compressed_path := Path(fastq)).exists():
