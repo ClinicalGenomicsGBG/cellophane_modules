@@ -11,7 +11,7 @@ _clean () {
 }
 
 module load $_NEXTFLOW_MODULE
-NXF_HOME="${TEMPDIR}/.nextflow" nextflow $@ & _nf_pid=$!
+NXF_HOME="${TMPDIR}/.nextflow" nextflow $@ & _nf_pid=$!
 
 trap _clean EXIT
 
