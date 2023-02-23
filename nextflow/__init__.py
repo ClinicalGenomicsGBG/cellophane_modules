@@ -32,12 +32,8 @@ def nextflow(
         ),
         f"run {main}",
         "-ansi-log false" if not ansi_log or config.nextflow.ansi_log else "",
-        "-resume" if resume or config.nextflow.resume else "",
-        (
-            f"-work-dir {config.nextflow.workdir}"
-            if "workdir" in config.nextflow
-            else workdir or ""
-        ),
+        f"-work-dir {workdir}" if workdir else "",
+        "-resume" if resume else "",
         f"-with-report {report}" if report else "",
         f"-profile {config.nextflow.profile}",
         *args,
