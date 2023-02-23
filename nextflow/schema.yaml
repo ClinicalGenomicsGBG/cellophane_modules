@@ -25,6 +25,10 @@ properties:
         type: boolean
         default: false
         description: Enable ANSI log
+      module:
+        type: string
+        description: Nextflow module
+        default: nextflow
     required:
       - sge_queue
       - sge_pe

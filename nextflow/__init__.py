@@ -37,7 +37,7 @@ def nextflow(
         f"-with-report {report}" if report else "",
         f"-profile {config.nextflow.profile}",
         *args,
-        env={"_MODULES_INIT": config.modules_init, **env},
+        env={"_NEXTFLOW_MODULE": config.nextflow.module, **env},
         queue=config.nextflow.sge_queue,
         pe=config.nextflow.sge_pe,
         slots=config.nextflow.sge_slots,
