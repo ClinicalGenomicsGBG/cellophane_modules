@@ -361,7 +361,8 @@ def slims_samples(
                         )
                     )
                 else:
-                    # FIXME: Why do the samples need to be unpacked?
+                    if sample.fastq_paths == [None, None]:
+                        sample.pop("fastq_paths")
                     _data = {**_ss[0]} | {**sample}
                     _return_samples.append(
                         SlimsSample(
