@@ -10,7 +10,7 @@ _clean () {
     exit $code
 }
 
-module load java/jdk11.0.2
+module load $_JAVA_MODULE
 module load $_NEXTFLOW_MODULE
 NXF_HOME="${TMPDIR}/.nextflow" nextflow $@ & _nf_pid=$!
 
