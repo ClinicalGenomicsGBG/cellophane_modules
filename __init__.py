@@ -68,7 +68,6 @@ def petagene_extract(
     **_,
 ) -> data.Samples:
     """Extract petagene fasterq files."""
-
     with ProcessPoolExecutor(config.unpack.parallel) as pool:
         for s_idx, sample in enumerate(samples):
             for f_idx, fastq in enumerate(sample.fastq_paths):
