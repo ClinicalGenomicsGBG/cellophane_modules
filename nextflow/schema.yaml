@@ -25,10 +25,14 @@ properties:
         type: boolean
         default: false
         description: Enable ANSI log
-      module:
+      nf_module:
         type: string
         description: Nextflow module
         default: nextflow
+      java_module:
+        type: string
+        description: Java module
+        default: java
     required:
       - sge_queue
       - sge_pe
