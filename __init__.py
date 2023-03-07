@@ -22,9 +22,18 @@ def _extract(
 
     match method:
         case "petagene":
-            args = f"-d -t {config.unpack.sge_slots} {compressed_path}"
+            args = (
+                "-d"
+                f"-t {config.unpack.sge_slots}"
+                f"{compressed_path}"
+            )
         case "spring":
-            args = f"-d -t {config.unpack.sge_slots} {compressed_path}"
+            args = (
+                "-d"
+                f"-t {config.unpack.sge_slots}"
+                f"-i {compressed_path}"
+                f"-o {extract_path}"
+            )
         case _:
             raise ValueError(f"Unknown unpack method: {method}")
 
@@ -35,8 +44,8 @@ def _extract(
         pe=config.unpack.sge_pe,
         slots=config.unpack.sge_slots,
         name="petagene",
-        stderr=config.logdir / f"{extract_path.name}.{method}.err",
-        stdout=config.logdir / f"{extract_path.name}.{method}.out",
+        stderr=config.logdir / f"{compressed_path.name}.{method}.err",
+        stdout=config.logdir / f"{compressed_path.name}.{method}.out",
         cwd=compressed_path.parent,
         check=True,
     )
@@ -55,9 +64,18 @@ def _extract_callback(
     if (exception := future.exception()) is not None:
         logger.error(f"Failed to extract {compressed_path} ({exception})")
         samples[s_idx].fastq_paths[f_idx] = None
-    else:
-        logger.debug(f"Extracted {compressed_path} to {extract_path}")
+    elif extract_path.exists():
+        logger.debug(f"Extracted {extract_path}")
         samples[s_idx].fastq_paths[f_idx] = extract_path
+    elif (
+        (fq1 := extract_path.with_suffix(".1")).exists() and
+        (fq2 := extract_path.with_suffix(".2")).exists()
+    ):
+        logger.debug(f"Extracted {fq1} and {fq2}")
+        samples[s_idx].fastq_paths = [fq1, fq2]
+    else:
+        logger.error(f"Extraction completed, but {extract_path} does not exist")
+        samples[s_idx].fastq_paths[f_idx] = None
 
 
 @modules.pre_hook(label="unpack", priority=15)
