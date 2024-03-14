@@ -1,1 +1,1 @@
-uge-drmaa2 @ git+https://github.com/gridengine/drmaa2-python.git@509fb1c634619dc58917f99f2529faab6af8f515 ; python_version >= "3.11" and python_version < "4.0"
+uge-drmaa2 @ git+https://github.com/gridengine/drmaa2-python.git@v8.7.4

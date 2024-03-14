@@ -39,13 +39,13 @@ jobs:
         run: poetry version -- ${{ inputs.version }}
       - name: poetry-lock
         run: poetry lock
-      - name: poetry-export
-        run: |
-          poetry export \
-            --format=requirements.txt \
-            --output requirements.txt \
-            --without-hashes \
-            --without-urls
+      # - name: poetry-export
+      #   run: |
+      #     poetry export \
+      #       --format=requirements.txt \
+      #       --output requirements.txt \
+      #       --without-hashes \
+      #       --without-urls
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.module }}-poetry-files
