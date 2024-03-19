@@ -6,7 +6,6 @@ from time import sleep
 
 from cellophane import cfg, data, executors, modules
 from humanfriendly import parse_size
-from mpire.async_result import AsyncResult
 
 
 def _sync_callback(
@@ -19,7 +18,7 @@ def _sync_callback(
     del result  # Unused
     for src, dst in manifest:
         if not Path(dst).exists():
-            logger.debug(f"Waiting {_timeout} seconds for {dst} to become available")
+            logger.debug(f"Waiting {timeout} seconds for {dst} to become available")
         _timeout = copy(timeout)
         while not (available := Path(dst).exists()) and (_timeout := _timeout - 1) > 0:
             sleep(1)
