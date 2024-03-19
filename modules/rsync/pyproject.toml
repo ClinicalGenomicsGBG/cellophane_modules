@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cellophane-rsync"
-version = "0.1.1"
+version = "v1.0.0"
 description = "Rsync module for Cellophane"
 authors = ["dodslaser <2969909+dodslaser@users.noreply.github.com>"]
 readme = "README.md"
