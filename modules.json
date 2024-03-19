@@ -4,7 +4,9 @@
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
       }
     }
   },
@@ -13,7 +15,9 @@
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
       }
     }
   },
@@ -22,16 +26,28 @@
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "1.0.0",
+          "dev"
+        ],
+        "tag": "mail/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   },
   "nextflow": {
     "path": "modules/nextflow/",
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
       }
     }
   },
@@ -40,7 +56,9 @@
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
       }
     }
   },
@@ -49,7 +67,9 @@
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
       }
     }
   },
@@ -58,7 +78,9 @@
     "versions": {
       "dev": {
         "tag": "dev",
-        "cellophane": [">0.0.0"]
+        "cellophane": [
+          ">0.0.0"
+        ]
       }
     }
   }
