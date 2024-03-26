@@ -58,6 +58,7 @@ def nextflow(
     _nxf_log = config.logdir / "nextflow" / f"{name}.{uuid.hex}.log"
     _nxf_config = nxf_config or config.nextflow.get("config")
     _nxf_work = nxf_work or config.nextflow.get("workdir") or workdir / "nxf_work"
+    _nxf_launch = workdir / "nxf_launch"
     _nxf_profile = nxf_profile or config.nextflow.get("profile")
 
     _nxf_log.parent.mkdir(parents=True, exist_ok=True)
@@ -79,6 +80,7 @@ def nextflow(
             **config.nextflow.env,
             **(env or {}),
         },
+        workdir=_nxf_launch,
         uuid=uuid,
         name=name,
         cpus=config.nextflow.threads,
@@ -87,5 +89,5 @@ def nextflow(
 
     if check:
         result.get()
-    
+
     return result, uuid
