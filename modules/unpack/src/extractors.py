@@ -1,9 +1,6 @@
-import multiprocessing as mp
-from functools import partial
 from logging import LoggerAdapter
 from pathlib import Path
 from typing import Callable, Iterator
-from uuid import UUID
 
 from cellophane import cfg, executors
 from mpire.async_result import AsyncResult
@@ -29,13 +26,32 @@ class Extractor:
         logger: LoggerAdapter,
         compressed_path: Path,
         config: cfg.Config,
-        env: dict = {},
+        env: dict | None = None,
         executor: executors.Executor,
-        callback: Callable = None,
-        error_callback: Callable = None,
+        callback: Callable | None = None,
+        error_callback: Callable | None = None,
     ) -> AsyncResult | None:
-        if [*self.extracted_paths(compressed_path)]:
-            callback(None)
+        """
+        Summary:
+        Extracts a compressed file using the provided executor and configuration.
+
+        Args:
+            logger: LoggerAdapter - The logger to use for logging messages.
+            compressed_path: Path - The path to the compressed file to extract.
+            config: cfg.Config - The configuration settings to use for extraction.
+            env: dict | None - Optional environment variables to set during extraction.
+            executor: executors.Executor - The executor to use for jobs.
+            callback: Callable | None - Optional callback called on completion.
+            error_callback: Callable | None - Optional callback called on error.
+
+        Returns:
+            AsyncResult | None - The result of the extraction process,
+                or None if already extracted.
+        """
+
+        if [*self.extracted_paths(compressed_path)]:  # pylint: disable=using-constant-test
+            if callback is not None:
+                callback(None)
             return None
         else:
             logger.info(f"Extracting {compressed_path.name} with {self.label}")
@@ -43,7 +59,7 @@ class Extractor:
                 self.script,
                 name=f"unpack_{compressed_path.name}",
                 env={
-                    **env,
+                    **(env or {}),
                     "UNPACK_INIT": config.unpack.get("init", ""),
                     "UNPACK_EXIT": config.unpack.get("exit", ""),
                     "COMPRESSED_PATH": compressed_path,
@@ -63,6 +79,7 @@ class PetageneExtractor(
     label="petagene",
     script=Path(__file__).parent.parent / "scripts" / "petagene.sh",
 ):
+    """Petagene extractor."""
     @staticmethod
     def extracted_paths(compressed_path: Path) -> Iterator[Path]:
         _base = compressed_path.name.partition(".")[0]
@@ -76,6 +93,7 @@ class SpringExtractor(
     label="spring",
     script=Path(__file__).parent.parent / "scripts" / "spring.sh",
 ):
+    """Spring extractor."""
     @staticmethod
     def extracted_paths(compressed_path: Path) -> Iterator[Path]:
         _base = compressed_path.name.partition(".")[0]

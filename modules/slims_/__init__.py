@@ -8,7 +8,6 @@ from typing import Literal
 from attrs import define, field, fields_dict
 from attrs.setters import validate
 from cellophane import cfg, data, modules, util
-
 from slims.slims import Record, Slims
 
 from .src.util import get_field, get_records
@@ -333,7 +332,7 @@ def slims_derive(
     **_,
 ) -> SlimsSamples:
     """Add derived content to SLIMS samples"""
-    if not "derive" in config.slims:
+    if "derive" not in config.slims:
         return samples
     elif config.slims.dry_run:
         logger.debug("Dry run - Not adding derived records")
@@ -353,7 +352,7 @@ def slims_running(
 ) -> SlimsSamples:
     """Add derived content to SLIMS samples"""
     samples.set_state("running")
-    if not "derive" in config.slims:
+    if "derive" not in config.slims:
         return samples
     elif config.slims.dry_run:
         logger.debug("Dry run - Not updating SLIMS")
@@ -372,7 +371,7 @@ def slims_update(
     **_,
 ) -> None:
     """Update SLIMS samples and derived records."""
-    if not "derive" in config.slims:
+    if "derive" not in config.slims:
         return samples
     elif config.slims.dry_run:
         logger.info("Dry run - Not updating SLIMS")
