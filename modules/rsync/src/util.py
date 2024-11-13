@@ -25,3 +25,16 @@ def sync_callback(
             logger.debug(f"Copied {src} -> {dst}")
         else:
             logger.warning(f"{dst} is missing")
+
+def add_timestamp(
+        resultdir: Path,
+        dst: Path,
+        timestamp: str,
+) -> Path:
+    """Add datetag to outputfolder."""
+    if dst.is_relative_to(resultdir):
+        # Unique outputfolder for each sample located after resultdir
+        dst_parts = dst.relative_to(resultdir).parts
+        dst_name_with_tag = f"{dst_parts[0]}_{timestamp}"
+        dst = resultdir / dst_name_with_tag / Path(*dst_parts[1:])
+    return dst

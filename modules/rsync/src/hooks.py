@@ -3,11 +3,12 @@
 from functools import partial
 from logging import LoggerAdapter
 from pathlib import Path
+from time import strftime
 
 from cellophane import cfg, data, executors, modules
 from humanfriendly import parse_size
 
-from .util import sync_callback
+from .util import sync_callback, add_timestamp
 
 ROOT = Path(__file__).parent.parent
 
@@ -41,7 +42,10 @@ def rsync_results(
         "dir": [],
     }
 
+    timestamp = strftime('%y%m%d-%H%M%S')
     for output in samples.output:
+        logger.debug(f"Adding timestamp to {output.dst}")
+        output.dst = add_timestamp(Path(config.resultdir), output.dst, timestamp)
         if not output.src.exists():
             logger.warning(f"{output.src} does not exist")
             continue
