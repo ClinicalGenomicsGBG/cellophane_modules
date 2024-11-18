@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from cellophane.src.testing import parametrize_from_yaml
+from cellophane.testing import parametrize_from_yaml
 from pytest import mark, param, raises
 from pytest_mock import MockerFixture
 from ruamel.yaml import YAML

@@ -161,12 +161,12 @@
     modules:
       a.py: |
         from cellophane import runner, post_hook, Sample
-        from cellophane.src.data import Container
+        from cellophane import data
         from attrs import define, field
 
         @define(slots=False)
         class SampleMixin(Sample):
-            container: Container = field(factory=Container)
+            container: data.Container = field(factory=data.Container)
             attribute: str | None = None
 
         @runner()
