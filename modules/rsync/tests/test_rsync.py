@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from cellophane.src.testing import parametrize_from_yaml
+from cellophane.testing import parametrize_from_yaml
 
 _ROOT = Path(__file__).parent
 

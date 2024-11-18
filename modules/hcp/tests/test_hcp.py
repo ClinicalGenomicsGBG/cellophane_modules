@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from cellophane import Sample
-from cellophane.src.testing import parametrize_from_yaml
+from cellophane.testing import parametrize_from_yaml
 from pytest import fixture, mark, param, raises
 from pytest_mock import MockerFixture
 
