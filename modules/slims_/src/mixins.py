@@ -7,8 +7,8 @@ from warnings import warn
 from attrs import Attribute, define, field
 from attrs.setters import validate
 from cellophane import Config, Sample, Samples
-from cellophane.src.data import Container
-from cellophane.src.util import map_nested_keys
+from cellophane.data import Container
+from cellophane.util import map_nested_keys
 from slims.slims import Record, Slims
 
 from .util import get_field, get_fields_from_sample, get_records
