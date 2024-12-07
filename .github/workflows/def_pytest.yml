@@ -96,7 +96,6 @@ jobs:
           echo ::error::Unexpected pytest exit code $code
           echo result=failure | tee -a "$GITHUB_OUTPUT"
         fi
-        exit $code
 
     - uses: EnricoMi/publish-unit-test-result-action@v2
       if: ${{ (!cancelled()) && inputs.publish-results }}
@@ -108,5 +107,5 @@ jobs:
       if: ${{ (!cancelled()) && (steps.pytest.outputs.result != 'failure'  || inputs.ignore-fail) }}
       with:
         name: ${{ env.support_json}}
-        path: ${{ env.support_json}}
+        path: ${{ inputs.path }}/${{ env.support_json}}
         retention-days: 1
