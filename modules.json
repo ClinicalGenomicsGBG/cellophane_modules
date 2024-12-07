@@ -40,8 +40,16 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "1.1.0",
+          "dev"
+        ],
+        "tag": "nextflow/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   },
   "rsync": {
     "path": "modules/rsync/",
