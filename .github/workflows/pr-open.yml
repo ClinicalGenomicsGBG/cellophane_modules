@@ -1,8 +1,10 @@
 # Move non-release PRs to dev branch
 ---
-name: PR Opened/Edit/Reopened on Dev
+name: PR Open/Edit
 
-permissions: read-all
+permissions:
+  checks: write
+  pull-requests: write
 
 on: # yamllint disable-line rule:truthy
   pull_request_target:
@@ -14,6 +16,67 @@ concurrency:
   group: ${{ github.event.pull_request.number }}-${{ github.workflow }}
 
 jobs:
+  modules:
+    name: Modules
+    uses: ./.github/workflows/def_list-modules.yml
+    with:
+      only-changed: true
+
+  tag-pr:
+    name: Add tags
+    runs-on: ubuntu-latest
+    needs: modules
+    steps:
+    - name: format-labels
+      id: format-labels
+      run:
+        labels=$(yq '.[].name' ) <<< "${{ needs.modules.outputs.modules }}"
+        echo 'labels<<EOF' >> $GITHUB_OUTPUT
+        echo $labels >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
+    - uses: actions-ecosystem/action-add-labels@v1
+      with:
+        labels: |
+          ${{ steps.format-labels.outputs.labels }}
+          pytest-dev:
+            name: Run pytest (cellophane dev)
+            needs: [detect-release-branch, semver, module-pr]
+            if: inputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
+
+  pytest-latest:
+    uses: ./.github/workflows/def_pytest.yml
+    needs: modules
+    permissions:
+      checks: write
+      pull-requests: write
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.modules.outputs.modules) }}
+    with:
+      pr-head-sha: ${{ github.event.pull_request.head.sha }}
+      module: ${{ matrix.name }}
+      path: ${{ matrix.path }}
+      version: ${{ github.event.pull_request.head.sha }}
+      cellophane-repo: ClinicalGenomicsGBG/cellophane
+      cellophane-tag: latest
+
+  pytest-dev:
+    uses: ./.github/workflows/def_pytest.yml
+    needs: modules
+    permissions:
+      checks: write
+      pull-requests: write
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.modules.outputs.modules) }}
+    with:
+      pr-head-sha: ${{ github.event.pull_request.head.sha }}
+      module: ${{ matrix.name }}
+      path: ${{ matrix.path }}
+      version: ${{ github.event.pull_request.head.sha }}
+      cellophane-repo: ClinicalGenomicsGBG/cellophane
+      cellophane-tag: dev
+
   reviewdog-lint:
     name: Lint code
     uses: ./.github/workflows/def_reviewdog-lint.yml

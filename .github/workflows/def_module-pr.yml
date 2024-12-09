@@ -167,6 +167,7 @@ jobs:
       version: ${{ needs.semver.outputs.next-version }}
       cellophane-repo: ${{ inputs.cellophane-repo }}
       cellophane-tag: ${{ matrix.cellophane }}
+      generate-support-json: true
 
   pytest-dev:
     name: Run pytest (cellophane dev)
@@ -185,6 +186,7 @@ jobs:
       cellophane-tag: dev
       ignore-fail: true
       publish-results: true
+      generate-support-json: true
 
   update-module-json:
     name: Update modules.json

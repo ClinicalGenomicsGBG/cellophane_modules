@@ -1,5 +1,5 @@
 ---
-name: PR Closed on Main
+name: PR Close
 permissions: read-all
 
 on: # yamllint disable-line rule:truthy

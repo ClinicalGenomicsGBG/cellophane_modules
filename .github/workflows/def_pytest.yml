@@ -10,7 +10,10 @@ on: # yamllint disable-line rule:truthy
     inputs:
       publish-results:
         description: 'Publish test results'
-        required: false
+        type: boolean
+        default: false
+      generate-support-json:
+        description: 'Generate support json'
         type: boolean
         default: false
       pr-head-sha:
