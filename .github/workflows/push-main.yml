@@ -12,38 +12,16 @@ concurrency:
 
 jobs:
   cellophane-releases:
-    name: Gather cellophane releases
-    runs-on: ubuntu-latest
-    outputs:
-      releases: ${{ steps.get-tags.outputs.releases }}
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: -1
-    - name: get-tags
-      id: get-tags
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        releases=$(gh release list -L 5 -R ClinicalGenomicsGBG/cellophane --json tagName --jq '[.[].tagName]')
-        code=$? [[ "$code" != "0" ]] && exit $code
-        echo releases=$releases | tee -a "$GITHUB_OUTPUT"
+    name: Cellophane releases
+    uses: ./.github/workflows/def_list-releases.yml
+    with:
+      repo: ClinicalGenomicsGBG/cellophane
 
   modules:
-    name: Gather modules
-    runs-on: ubuntu-latest
-    outputs:
-      modules: ${{ steps.list-modules.outputs.modules }}
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: -1
-    - name: list-modules
-      id: list-modules
-      run: |
-        modules_=$(jq 'to_entries | map({name: .key, path: .value.path})' modules.json)
-        code=$?; [[ "$code" != "0" ]] && exit $code
-        echo modules=$modules_ | tee -a "$GITHUB_OUTPUT"
+    name: Modules
+    uses: ./.github/workflows/def_list-modules.yml
+    with:
+      has-changes-override-pattern: modules.json
 
   module-pr:
     name: Create or update release PR
@@ -63,6 +41,7 @@ jobs:
     with:
       module: ${{ matrix.name }}
       path: ${{ matrix.path }}
+      has-changes: ${{ matrix.has-changes }}
       base: main
       head: ${{ github.event.ref }}
       cellophane-repo: ClinicalGenomicsGBG/cellophane

@@ -13,6 +13,10 @@ on:
         description: 'Path to the module'
         type: string
         required: true
+      has-changes:
+        description: 'Wether or not the module has changed'
+        type: boolean
+        required: true
       head:
         description: 'HEAD to fetch commits from'
         type: string
@@ -35,22 +39,6 @@ on:
         value: ${{ jobs.module-pr.outputs.pr-head-sha }}
 
 jobs:
-  detect-changes:
-    name: Detect module changes
-    runs-on: ubuntu-latest
-    outputs:
-      has-changes: ${{ steps.detect-changes.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: tj-actions/changed-files@v45
-        id: detect-changes
-        with:
-          files: |
-            ${{ inputs.path }}**
-            modules.json
-
   detect-release-branch:
     name: Detect release branch
     runs-on: ubuntu-latest
@@ -65,8 +53,8 @@ jobs:
   semver:
     name: Calculate next version
     uses: ./.github/workflows/def_module-semver.yml
-    needs: [detect-changes, detect-release-branch]
-    if: needs.detect-changes.outputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
+    needs: [detect-release-branch]
+    if: inputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
     with:
       module: ${{ inputs.module }}
       path: ${{ inputs.path }}
@@ -74,8 +62,8 @@ jobs:
   changelog:
     name: Generate changelog
     uses: ./.github/workflows/def_changelog.yml
-    needs: [detect-changes, detect-release-branch]
-    if: needs.detect-changes.outputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
+    needs: [detect-release-branch]
+    if: inputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
     with:
       head: ${{ inputs.head }}
       path: ${{ inputs.path }}
@@ -83,8 +71,8 @@ jobs:
   sync-rye:
     name: Sync Rye metadata
     uses: ./.github/workflows/def_sync-rye.yml
-    needs: [detect-changes, detect-release-branch, semver]
-    if: needs.detect-changes.outputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
+    needs: [detect-release-branch, semver]
+    if: inputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
     with:
       module: ${{ inputs.module }}
       head: ${{ inputs.head }}
@@ -93,8 +81,8 @@ jobs:
 
   rebase-module-pr:
     name: Rebase PR
-    needs: [detect-changes, detect-release-branch]
-    if: needs.detect-changes.outputs.has-changes != 'true' && needs.detect-release-branch.outputs.exists == 'true'
+    needs: [detect-release-branch]
+    if: inputs.has-changes != 'true' && needs.detect-release-branch.outputs.exists == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -112,8 +100,8 @@ jobs:
 
   module-pr:
     name: Create or update PR
-    needs: [detect-changes, detect-release-branch, semver, sync-rye, changelog]
-    if: needs.detect-changes.outputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
+    needs: [detect-release-branch, semver, sync-rye, changelog]
+    if: inputs.has-changes == 'true' || !(needs.detect-release-branch.outputs.exists == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -162,8 +150,8 @@ jobs:
 
   pytest-released:
     name: Run pytest (cellophane releases)
-    needs: [detect-changes, detect-release-branch, semver, module-pr]
-    if: needs.detect-changes.outputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
+    needs: [detect-release-branch, semver, module-pr]
+    if: inputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
     uses: ./.github/workflows/def_pytest.yml
     permissions:
       checks: write
@@ -182,8 +170,8 @@ jobs:
 
   pytest-dev:
     name: Run pytest (cellophane dev)
-    needs: [detect-changes, detect-release-branch, semver, module-pr]
-    if: needs.detect-changes.outputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
+    needs: [detect-release-branch, semver, module-pr]
+    if: inputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
     uses: ./.github/workflows/def_pytest.yml
     permissions:
       checks: write
@@ -200,8 +188,8 @@ jobs:
 
   update-module-json:
     name: Update modules.json
-    needs: [detect-changes, detect-release-branch, pytest-dev, module-pr, semver]
-    if: needs.detect-changes.outputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
+    needs: [detect-release-branch, pytest-dev, module-pr, semver]
+    if: inputs.has-changes == 'true' || needs.detect-release-branch.outputs.exists != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write

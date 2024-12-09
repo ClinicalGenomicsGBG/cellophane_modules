@@ -1,0 +1,71 @@
+---
+name: List Modules
+
+on: # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      has-changes-override-pattern:
+        description: Glob pattern for files that will set 'has_changes' for all modules
+        type: string
+        default: ""
+      only-changed:
+        description: Only output changed modules
+        type: boolean
+        default: false
+    outputs:
+      modules:
+        description: JSON array of module names and paths
+        value: ${{ jobs.modules.outputs.modules }}
+
+jobs:
+  modules:
+    name: List modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.output-modules.outputs.modules }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: list-modules
+      id: list-modules
+      run: |
+        module_path_yaml=$(yq -P 'to_entries | map({.key: .value.path + "**"}) | .[]' < modules.json)
+        code=$?; [[ "$code" != "0" ]] && exit $code
+        echo 'module_path_yaml<<EOF' >> "$GITHUB_OUTPUT"
+        echo "$module_path_yaml" | tee -a "$GITHUB_OUTPUT"
+        echo 'EOF' >> "$GITHUB_OUTPUT"
+
+    - uses: tj-actions/changed-files@v45
+      id: detect-changes-override
+      with:
+        files: |
+          ${{ inputs.has-changes-override-pattern }}
+
+    - uses: tj-actions/changed-files@v45
+      id: detect-changes
+      if: ${{ steps.detect-changes-override.outputs.any_changed }} != "true"
+      with:
+        files_yaml: |
+          ${{ steps.list-modules.outputs.module_path_yaml }}
+
+    - name: output-modules
+      id: output-modules
+      run: |
+        modules_=$(jq 'to_entries | map({name: .key, path: .value.path})' modules.json)
+        code=$?; [[ "$code" != "0" ]] && exit $code
+
+        if [[ "${{ steps.detect-changes-override.outputs.any_changed }}" == "true" ]]; then
+          modules_=$(jq 'map(. + {"has-changes": true})' <<< $modules_)
+        elif [[ -z "${{ steps.detect-changes.outputs.changed_keys }}" ]]; then
+          modules_=$(jq 'map(. + {"has-changes": false})' <<< $modules_)
+        else
+          modules_=$(jq 'map(. + {"has-changes": (. as $x | ${{ steps.detect-changes.outputs.changed_keys }} | contains([$x.name]) )})' <<< $modules_)
+        fi
+
+        if [[ "${{ inputs.only-changed }}" == "true" ]]; then
+          modules_=$(jq 'map(select(.has-changes))' <<< $modules_)
+        fi
+
+        echo modules=$modules_ | tee -a "$GITHUB_OUTPUT"

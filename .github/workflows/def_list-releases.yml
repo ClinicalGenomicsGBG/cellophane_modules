@@ -1,0 +1,33 @@
+---
+name: List Releases
+
+on: # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      repo:
+        description: Repo to fetch releases from
+        type: string
+        required: true
+    outputs:
+      releases:
+        description: JSON array of release tags
+        value: ${{ jobs.releases.outputs.releases }}
+
+jobs:
+  releases:
+    name: List releases
+    runs-on: ubuntu-latest
+    outputs:
+      releases: ${{ steps.get-tags.outputs.releases }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: -1
+    - name: get-tags
+      id: get-tags
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        releases=$(gh release list -L 5 -R ${{ inputs.repo }} --json tagName --jq '[.[].tagName]')
+        code=$? [[ "$code" != "0" ]] && exit $code
+        echo releases=$releases | tee -a "$GITHUB_OUTPUT"
