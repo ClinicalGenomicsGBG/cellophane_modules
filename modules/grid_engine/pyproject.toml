@@ -7,7 +7,7 @@ readme = "README.md"
 dependencies = [
     "uge-drmaa2 @ git+https://github.com/gridengine/drmaa2-python.git@v8.9.0",
 ]
-requires-python = ">=3.11<4.0"
+requires-python = ">=3.11"
 
 [tool.coverage.run]
 concurrency = ["multiprocessing", "thread"]
@@ -30,7 +30,7 @@ managed = true
 universal = true
 dev-dependencies = [
     "mypy>=1.0.0,<2.0.0",
-    "black>=23.1.0,<24.0.0", 
+    "black>=23.1.0,<24.0.0",
     "isort>=5.12.0,<6.0.0",
     "flake8>=6.0.0,<7.0.0",
     "pytest-mock>=3.11.1,<4.0.0",
