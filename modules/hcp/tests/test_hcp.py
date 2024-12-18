@@ -1,12 +1,6 @@
 from pathlib import Path
-from unittest.mock import MagicMock
 
-from cellophane import Sample
 from cellophane.src.testing import parametrize_from_yaml
-from pytest import fixture, mark, param, raises
-from pytest_mock import MockerFixture
-
-from .. import HCPSample, fetch
 
 _ROOT = Path(__file__).parent
 

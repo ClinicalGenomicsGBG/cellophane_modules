@@ -1,6 +1,5 @@
 """Module for fetching files from HCP."""
 
-from functools import partial
 from pathlib import Path
 from typing import Callable
 from uuid import UUID, uuid4
