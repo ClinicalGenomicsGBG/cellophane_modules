@@ -18,6 +18,7 @@ class JobMock:
     state: int = drmaa2.JobState.DONE
     delay: int = 0
     id: str = "DUMMY"
+    job_name: str = "DUMMY"
 
     def get_info(self, *args, **kwargs):
         del args, kwargs
