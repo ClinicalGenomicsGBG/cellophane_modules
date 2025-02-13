@@ -7,6 +7,7 @@ from uuid import UUID
 import drmaa2
 from attrs import define
 from cellophane import Executor
+from cellophane.util import freeze_logs
 
 _GE_JOBS: dict[UUID, dict[UUID, tuple[drmaa2.JobSession, drmaa2.Job]]] = {}
 
@@ -17,7 +18,7 @@ def _destroy_ge_session(session: drmaa2.JobSession, logger: logging.LoggerAdapte
             session.close()
             session.destroy()
         except drmaa2.Drmaa2Exception as exc:
-            logger.warning(f"Caught an exception while closing SGE session ({session.name=}): {exc!r}")
+            logger.warning(f"Caught an exception while closing Grid Engine session '{session.name=}': {exc!r}")
 
 @define(slots=False, init=False)
 class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg]
@@ -39,15 +40,21 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
         os_env: bool = True,
         logger: logging.LoggerAdapter,
         cpus: int,
+        stdout: Path | None = None,
+        stderr: Path | None = None,
         **kwargs: Any,
     ) -> None:
         del kwargs  # Unused
-        _logdir = self.config.logdir / "grid_engine" / uuid.hex
-        _logdir.mkdir(exist_ok=True, parents=True)
+        _name = f"{name}_{uuid.hex[:8]}"
+        # NOTE: Thw stdout and stderr kwargs will be added in a feature release of cellophane.
+        # This is a workaround to remain compatible with the 1.1.x and earlier versions.
+        _stdout = stdout or workdir / f"{_name}.grid_engine.out"
+        _stderr = stderr or workdir / f"{_name}.grid_engine.err"
 
         session = None
+        exit_status: int | None = None
         try:
-            session = drmaa2.JobSession(f"{name}_{uuid.hex}")
+            session = drmaa2.JobSession(_name)
             job = session.run_job(
                 {
                     "remote_command": args[0],
@@ -64,29 +71,24 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
                     },
                     "job_name": f"{name}_{uuid.hex[:8]}",
                     "job_environment": env,
-                    "output_path": str(_logdir / f"{name}.out"),
-                    "error_path": str(_logdir / f"{name}.err"),
+                    "output_path": str(_stdout),
+                    "error_path": str(_stderr),
                     "working_directory": str(workdir),
                 }
             )
-            logger.debug(f"Grid Engine job started ({name=}, {uuid=}, {job.id=})")
+            logger.debug(f"Grid Engine job started ({_name}, {job.id=})")
             self.ge_jobs[uuid] = (session, job)
         except drmaa2.Drmaa2Exception as exception:
-            logger.error(f"Failed to submit job to Grid Engine ({name=}, {uuid=})")
+            logger.error(f"Failed to submit job to Grid Engine ({_name})")
             logger.debug(f"Message: {exception}", exc_info=exception)
-            with open(
-                _logdir / f"{name}.err",
-                mode="w",
-                encoding="utf-8",
-            ) as f:
-                f.write(str(exception))
-
+            _stderr.write_text(str(exception))
             exit_status = 1
         else:
-            while (
-                exit_status := job.get_info().exit_status
-            ) is None:  # pragma: no cover
+            while exit_status is None:
+                with freeze_logs():
+                    exit_status = job.get_info().exit_status
                 sleep(1)
+
 
         if uuid in self.ge_jobs:
             session, _ = self.ge_jobs[uuid]
@@ -99,14 +101,12 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
         if uuid in self.ge_jobs:
             session, job = self.ge_jobs[uuid]
             try:
-                logger.debug(f"Terminating SGE job (id={job.id})")
                 job.terminate()
                 job.wait_terminated()
-                logger.debug(f"SGE job terminated (id={job.id})")
+                logger.debug(f"Grid Engine job '{job.job_name}' (id={job.id}) terminated")
             except drmaa2.Drmaa2Exception as exc:
                 logger.warning(
-                    "Caught an exception while terminating SGE job "
-                    f"({job.id=}): {exc!r}"
+                    f"Caught an exception while terminating Grid Engine job '{job.job_name}' ({job.id=}): {exc!r}"
                 )
             _destroy_ge_session(session, logger)
             del self.ge_jobs[uuid]

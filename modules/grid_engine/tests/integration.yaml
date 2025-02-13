@@ -68,4 +68,4 @@
     --executor_name: grid_engine
   logs:
     - "Terminating job with uuid"
-    - "Terminating SGE job (id=DUMMY)"
+    - "Terminating Grid Engine job (DUMMY, id=DUMMY)"
