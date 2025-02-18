@@ -60,6 +60,10 @@ def nextflow(
         uuid=uuid_,
         name=name,
         cpus=config.nextflow.threads,
+        conda_spec={
+            "dependencies": config.nextflow.conda.dependencies,
+            "channels": config.nextflow.conda.channels,
+        },
         **kwargs,
     )
 
