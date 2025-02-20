@@ -11,6 +11,14 @@ from cellophane import Executor
 _GE_JOBS: dict[UUID, dict[UUID, tuple[drmaa2.JobSession, drmaa2.Job]]] = {}
 
 
+def _destroy_ge_session(session: drmaa2.JobSession, logger: logging.LoggerAdapter) -> None:
+    if session.name is not None and session.name in drmaa2.JobSession.list_session_names():
+        try:
+            session.close()
+            session.destroy()
+        except drmaa2.Drmaa2Exception as exc:
+            logger.warning(f"Caught an exception while closing SGE session ({session.name=}): {exc!r}")
+
 @define(slots=False, init=False)
 class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg]
     """Executor using grid engine."""
@@ -80,9 +88,10 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
             ) is None:  # pragma: no cover
                 sleep(1)
 
-        if session is not None:
-            session.close()
-            session.destroy()
+        if uuid in self.ge_jobs:
+            session, _ = self.ge_jobs[uuid]
+            _destroy_ge_session(session, logger)
+            del self.ge_jobs[uuid]
 
         raise SystemExit(exit_status)
 
@@ -99,14 +108,6 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
                     "Caught an exception while terminating SGE job "
                     f"({job.id=}): {exc!r}"
                 )
-            try:
-                session.close()
-                session.destroy()
-            except drmaa2.Drmaa2Exception as exc:
-                logger.warning(
-                    "Caught an exception while closing SGE session "
-                    f"({session.name=}): {exc!r}"
-                )
-
+            _destroy_ge_session(session, logger)
             del self.ge_jobs[uuid]
         return 143
