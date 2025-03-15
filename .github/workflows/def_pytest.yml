@@ -62,10 +62,10 @@ jobs:
     outputs:
       result: ${{ steps.pytest.outputs.result }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         ref: ${{ inputs.pr-head-sha }}
-    - uses: eifinger/setup-rye@v4
+    - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
       with:
         working-directory: ${{ inputs.path }}
     - name: install-cellophane
@@ -109,21 +109,21 @@ jobs:
           exit 0
         fi
 
-    - uses: EnricoMi/publish-unit-test-result-action@v2
+    - uses: EnricoMi/publish-unit-test-result-action@170bf24d20d201b842d7a52403b73ed297e6645b
       if: (!github.event.act && !cancelled() && inputs.publish-results)
       with:
         check_name: Test Results (cellophane@${{ inputs.cellophane-tag }})
         files: ${{ inputs.path }}/${{ env.pytest_junit_xml }}
         commit: ${{ inputs.pr-head-sha }}
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       if: (!cancelled() && (steps.pytest.outputs.result != 'failure'  || inputs.ignore-fail))
       with:
         name: ${{ env.support_json }}
         path: ${{ inputs.path }}/${{ env.support_json }}
         retention-days: 1
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       if: (!cancelled())
       with:
         name: ${{ env.pytest_junit_xml }}

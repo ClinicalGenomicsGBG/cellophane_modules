@@ -23,45 +23,45 @@ jobs:
   actionlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-actionlint@v1
+      - uses: reviewdog/action-actionlint@db58217885f9a6570da9c71be4e40ec33fe44a1f
         with:
           reporter: github-check
 
   markdownlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-markdownlint@v0
+      - uses: reviewdog/action-markdownlint@f901468edf9a3634dd39b35ba26cad0aad1a0bfd
         with:
           reporter: github-check
 
   black:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-black@v3
+      - uses: reviewdog/action-black@cf848fbd4fc28e07877f41990ee6777a23aac379
         with:
           reporter: github-check
 
   mypy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: eifinger/setup-rye@v4
+      - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
         with:
           enable-cache: true
       - name: rye-sync
         run: rye sync
-      - uses: tsuyoshicho/action-mypy@v4
+      - uses: tsuyoshicho/action-mypy@759c01eeb886d64bc678a015b8474dfe97a67a0d
         with:
           execute_command: 'rye run mypy'
           reporter: github-check
@@ -69,15 +69,15 @@ jobs:
   pylint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: eifinger/setup-rye@v4
+      - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
         with:
           enable-cache: true
       - name: rye-sync
         run: rye sync
-      - uses: dodslaser/action-pylint@main
+      - uses: dodslaser/action-pylint@f5108d4fee109ac5ab0ae2cfb0570b319a1e51cc
         with:
           execute_command: 'rye run pylint'
           pylint_rc: ./pyproject.toml
@@ -87,20 +87,20 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-gitleaks@v1
+      - uses: reviewdog/action-gitleaks@ee92cea6a778deaddaeedd22969aed3bdca114cc
         with:
           reporter: github-check
 
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-trivy@v1
+      - uses: reviewdog/action-trivy@5a2ff866ea9eb0e623fe85f4a5b2eea7cae508e6
         with:
           trivy_command: filesystem
           trivy_target: '.'
@@ -109,18 +109,18 @@ jobs:
   yamllint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-yamllint@v1
+      - uses: reviewdog/action-yamllint@1dca3ad811867be18fbe293a9818d715a6c2cd46
 
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: reviewdog/action-shellcheck@v1
+      - uses: reviewdog/action-shellcheck@6e0e63d1750d02d761b3df0f2c5ba9f9ac4a9ed7
         with:
           reporter: github-check
           reviewdog_flags: -guess

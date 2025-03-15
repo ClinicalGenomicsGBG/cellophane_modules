@@ -39,7 +39,7 @@ jobs:
       next-version: ${{ steps.format-version.outputs.next-version }}
       current-version: ${{ steps.format-version.outputs.current-version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
       - name: latest-tag
@@ -57,7 +57,7 @@ jobs:
           commits="${commits//$'\n'/'%0A'}"
           commits="${commits//$'\r'/'%0D'}"
           echo "::set-output name=commits::$commits"
-      - uses: dodslaser/semver-action@main
+      - uses: dodslaser/semver-action@1b95f7b177b1d974bbc8fe9edb440debb4ac70c2
         id: semver
         with:
           token: ${{ github.token }}

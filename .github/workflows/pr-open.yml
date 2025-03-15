@@ -30,7 +30,7 @@ jobs:
         echo ${{ github.event.pull_request.number }} | tee "pr.number"
         echo ${{ github.event.pull_request.head.sha  }} | tee "pr.head-sha"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       with:
         retention-days: 1
         name: pr-metadata

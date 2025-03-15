@@ -27,7 +27,7 @@ jobs:
     outputs:
       changes: "${{ steps.changelog.outputs.content }}"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
           fetch-depth: 0
@@ -37,7 +37,7 @@ jobs:
           glob="$(sed 's,//,/,' <<< '${{ inputs.path }}/*')"
           code=$?; [[ "$code" != "0" ]] && exit $code
           echo glob=$glob | tee -a "$GITHUB_OUTPUT"
-      - uses: orhun/git-cliff-action@v3
+      - uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
         id: changelog
         with:
           config: cliff.toml

@@ -46,7 +46,7 @@ jobs:
     outputs:
       exists: ${{ steps.branch-exists.outputs.exists }}
     steps:
-      - uses: GuillaumeFalourd/branch-exists@v1.1
+      - uses: GuillaumeFalourd/branch-exists@009290475dc3d75b5d7ec680c0c5b614b0d9855d
         id: branch-exists
         with:
             branch: release/${{ inputs.module }}
@@ -88,7 +88,7 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         ref: release/${{ inputs.module }}
         fetch-depth: 0
@@ -111,17 +111,17 @@ jobs:
       pr-number: ${{ steps.create-or-update-pr.outputs.pull-request-number }}
       pr-head-sha: ${{ steps.create-or-update-pr.outputs.pull-request-head-sha }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         ref: ${{ inputs.head }}
     - name: git-reset
       run: git reset --hard ${{ inputs.head }}
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
       with:
         pattern: '${{ inputs.module }}-meta'
         path: ${{ inputs.path }}
         merge-multiple: true
-    - uses: peter-evans/create-pull-request@v6
+    - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
       id: create-or-update-pr
       with:
         title: "Release ${{ inputs.module }} ${{ needs.semver.outputs.next-version }} 🚀"
@@ -136,7 +136,7 @@ jobs:
         base: ${{ inputs.base }}
         labels: release
 
-    - uses: actions-ecosystem/action-create-comment@v1
+    - uses: actions-ecosystem/action-create-comment@e23bc59fbff7aac7f9044bd66c2dc0fe1286f80b
       if: (!github.event.act && steps.create-or-update-pr.outputs.pull-request-operation == 'created')
       with:
         github_token: ${{ github.token }}
@@ -216,10 +216,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: release/${{ inputs.module }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
         with:
           pattern: '${{ inputs.module }}-*.support.json'
           merge-multiple: true

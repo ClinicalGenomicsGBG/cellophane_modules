@@ -31,7 +31,7 @@ jobs:
       changed_modules: ${{ steps.output-modules.outputs.changed_modules }}
       unchanged_modules: ${{ steps.output-modules.outputs.unchanged_modules }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         fetch-depth: 0
 
@@ -44,14 +44,14 @@ jobs:
         echo "$module_path_yaml" | tee -a "$GITHUB_OUTPUT"
         echo 'EOF' >> "$GITHUB_OUTPUT"
 
-    - uses: tj-actions/changed-files@v45
+    - uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32
       id: detect-changes-override
       if: inputs.has-changes-override-pattern != ''
       with:
         files: |
           ${{ inputs.has-changes-override-pattern }}
 
-    - uses: tj-actions/changed-files@v45
+    - uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32
       id: detect-changes
       if: ${{ steps.detect-changes-override.outputs.any_changed }} != "true"
       with:

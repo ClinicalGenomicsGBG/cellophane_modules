@@ -25,7 +25,7 @@ jobs:
       lables-add: ${{ steps.pr-metadata.outputs.pr_lables_add  }}
       labels-remove: ${{ steps.pr-metadata.outputs.pr_labels_remove  }}
     steps:
-    - uses: dawidd6/action-download-artifact@v7
+    - uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295
       with:
         name: pr-metadata
         run_id: ${{ github.event.workflow_run.id }}
@@ -53,14 +53,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: pr-metadata
     steps:
-    - uses: actions-ecosystem/action-add-labels@v1
+    - uses: actions-ecosystem/action-add-labels@bd52874380e3909a1ac983768df6976535ece7f8
       if: ${{ !env.ACT }}
       with:
         number: ${{ needs.pr-metadata.outputs.pr-number }}
         labels: |
           ${{ needs.pr-metadata.outputs.lables-add }}
 
-    - uses: actions-ecosystem/action-remove-labels@v1
+    - uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0
       if: ${{ !env.ACT }}
       with:
         number: ${{ needs.pr-metadata.outputs.pr-number }}
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: pr-metadata
     steps:
-    - uses: dawidd6/action-download-artifact@v7
+    - uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295
       with:
         name: '.*\.pytest\.xml'
         name_is_regexp: true
@@ -80,13 +80,13 @@ jobs:
       run: |
         npx --package=junit-report-merger -c 'jrm merged-dev.xml */*-dev.pytest.xml'
         npx --package=junit-report-merger -c 'jrm merged-latest.xml */*-latest.pytest.xml'
-    - uses: EnricoMi/publish-unit-test-result-action@v2
+    - uses: EnricoMi/publish-unit-test-result-action@170bf24d20d201b842d7a52403b73ed297e6645b
       if: (!github.event.act)
       with:
         check_name: Test Results (cellophane@latest)
         files: merged-latest.xml
         commit: ${{ needs.pr-metadata.outputs.pr-head-sha }}
-    - uses: EnricoMi/publish-unit-test-result-action@v2
+    - uses: EnricoMi/publish-unit-test-result-action@170bf24d20d201b842d7a52403b73ed297e6645b
       if: (!github.event.act)
       with:
         check_name: Test Results (cellophane@dev)
