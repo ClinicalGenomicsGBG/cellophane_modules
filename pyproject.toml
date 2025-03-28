@@ -24,7 +24,7 @@ dev-dependencies = [
     "pytest-cov>=4.1.0,<5.0.0",
     "pytest-subprocess>=1.5.3",
     "pylint>=3.0.2,<4.0.0",
-    "cellophane @ git+https://github.com/ClinicalGenomicsGBG/cellophane.git@dev",
+    "cellophane[dev] @ git+https://github.com/ClinicalGenomicsGBG/cellophane.git@dev",
     "types-pygments>=2.18.0.20240506",
     "types-colorama>=0.4.15.20240311",
     "types-humanfriendly>=10.0.1.11",
