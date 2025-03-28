@@ -23,7 +23,7 @@ boto3==1.34.143
 botocore==1.34.143
     # via boto3
     # via s3transfer
-cellophane @ git+https://github.com/ClinicalGenomicsGBG/cellophane.git@926db56370915ee03253dad3f1aa9262546ffd21
+cellophane @ git+https://github.com/ClinicalGenomicsGBG/cellophane.git@5b540f8fde2881e3fd09be9833cfbf6ef57abbf5
 certifi==2024.7.4
     # via requests
 charset-normalizer==3.3.2
