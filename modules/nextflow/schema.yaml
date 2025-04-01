@@ -28,14 +28,8 @@ properties:
         type: mapping
         description: Environment variables that will be passed to the nextflow process
         default: {}
-      conda:
-        channels:
-          type: array
-          description: Conda channel
-          default:
-            - bioconda
-        dependencies:
-          type: array
-          description:
-          default:
-            - nextflow >= 23.04.3, < 24.0.0
+      conda_spec:
+        type: mapping
+        default:
+          channels: [bioconda]
+          dependencies: ['nextflow >= 23.04.3, < 24.0.0']
