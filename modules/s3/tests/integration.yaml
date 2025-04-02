@@ -1,0 +1,117 @@
+- &s3_test
+  id: fetch_s3
+  structure:
+    samples.yaml: |
+      - id: BACKUP
+        files:
+        - input/BACKUP
+        s3_remote_keys:
+        - BACKUP
+    credentials.json: |
+      {
+        "endpoint": "DUMMY",
+        "aws_access_key_id": "DUMMY",
+        "aws_secret_access_key": "DUMMY"
+      }
+  external:
+    ..: modules/s3
+  mocks:
+    modules.s3.src.util.boto3.client: ~
+  args:
+    --samples_file: samples.yaml
+    --workdir: work
+    --s3_credentials: credentials.json
+  logs:
+    - Fetched BACKUP from s3
+
+- <<: *s3_test
+  id: no_backup
+  structure:
+    samples.yaml: |
+      - id: NO_BACKUP
+        files:
+        - input/NO_BACKUP
+  logs:
+    - No backup for NO_BACKUP
+
+- <<: *s3_test
+  id: skip_present
+  structure:
+    samples.yaml: |
+      - id: PRESENT
+        files:
+        - input/PRESENT
+        s3_remote_keys:
+        - PRESENT
+    input:
+      PRESENT: PRESENT
+  logs:
+    - Found all files for PRESENT locally
+
+- <<: *s3_test
+  id: not_configured
+  args:
+    --workdir: work
+  logs:
+  - Missing credentials for S3 backup
+
+- <<: *s3_test
+  id: fetch_exception
+  mocks:
+    modules.s3.src.util.boto3.client:
+      side_effect: !!python/object/new:Exception ["fetch_exception"]
+  logs:
+  - Failed to fetch backup for BACKUP (fetch_exception)
+
+- <<: *s3_test
+  id: s3_merge
+  structure:
+    modules:
+      runner.py: |
+        from cellophane import runner, post_hook, pre_hook
+        @runner()
+        def a(samples, **_):
+            return samples
+
+        @runner()
+        def b(samples, **_):
+            return samples
+
+        @post_hook()
+        def check(samples, logger, **_):
+            for sample in samples:
+              logger.info(f"{sample.id=} {sample.s3_remote_keys=}")
+
+    samples.yaml: |
+      - id: A
+        files:
+        - input/A
+        s3_remote_keys:
+        - A
+      - id: B
+        files:
+        - input/B
+        s3_remote_keys:
+        - B
+    input:
+      A: A
+      B: B
+  logs:
+    - sample.id='A' sample.s3_remote_keys={'A'}
+    - sample.id='B' sample.s3_remote_keys={'B'}
+
+- <<: *s3_test
+  id: s3_length_missmatch
+  structure:
+    samples.yaml: |
+      - id: A
+        files:
+        - input/A
+        s3_remote_keys:
+        - A
+        - B
+    input:
+      A: A
+  logs:
+    - "Unhandled exception: ValueError('Length mismatch between s3_remote_keys and files: 2 != 1')"
+  exception: SystemExit(1)

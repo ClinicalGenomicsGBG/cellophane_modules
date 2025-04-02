@@ -21,6 +21,17 @@
       }
     }
   },
+  "s3": {
+    "path": "modules/s3/",
+    "versions": {
+      "dev": {
+        "tag": "main",
+        "cellophane": [
+          ">0.0.0"
+        ]
+      }
+    }
+  },
   "mail": {
     "path": "modules/mail/",
     "versions": {
