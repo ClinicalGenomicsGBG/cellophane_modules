@@ -29,8 +29,15 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "dev"
+        ],
+        "tag": "mail/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   },
   "nextflow": {
     "path": "modules/nextflow/",
