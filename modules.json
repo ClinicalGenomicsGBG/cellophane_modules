@@ -73,7 +73,14 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "dev"
+        ],
+        "tag": "unpack/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   }
 }
