@@ -51,8 +51,15 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "dev"
+        ],
+        "tag": "rsync/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   },
   "slims": {
     "path": "modules/slims_/",
