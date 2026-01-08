@@ -1,9 +1,70 @@
 """Nextflow-specific mixins for Cellophane."""
 
+import re
+from logging import LoggerAdapter
 from pathlib import Path
 
 from cellophane import Samples
 
+# Prefer explicit tokens first (R1/R2), then fall back to bare 1/2 tokens.
+_EXPLICIT = re.compile(r"(?i)(?<=[._-])R([12])(?=[._-])")
+_NUMERIC  = re.compile(r"(?<=[._-])([12])(?=[._-])")
+
+def _infer_read(path: str | Path) -> tuple[int | None, str]:
+    """
+    Infer read number (1 or 2) from filename tokens.
+    Returns (read, how). If read is None, 'how' explains why.
+    """
+    name = Path(path).name
+
+    for pat, how in ((_EXPLICIT, "explicit R1/R2 token"), (_NUMERIC, "numeric 1/2 token")):
+        last: int | None = None
+        seen: set[int] = set()
+
+        for m in pat.finditer(name):
+            val = int(m.group(1))
+            seen.add(val)
+            last = val
+
+        if last is not None:
+            if len(seen) > 1:
+                return None, f"ambiguous: found both {sorted(seen)} via {how}"
+            return last, how
+
+    return None, "no R1/R2 marker found"
+
+def split_r1_r2(files, *, logger: LoggerAdapter | None = None, sample_id = None):
+    """
+    Strictly split a 2-file FASTQ pair into (R1, R2).
+    """
+    if len(files) != 2:
+        raise ValueError(f"Expected exactly 2 FASTQ files for sample {sample_id!r}, got {len(files)}")
+
+    r1: str | None = None
+    r2: str | None = None
+
+    for f in files:
+        read, how = _infer_read(f)
+
+        if read is None:
+            raise ValueError(f"Could not classify FASTQ {f!s} for sample {sample_id!r}: {how}")
+        
+        if logger:
+            logger.debug(f"Classified FASTQ {f} as R{read} {how}")
+
+        if read == 1:
+            if r1 is not None:
+                raise ValueError(f"Multiple R1 files for sample {sample_id!r}: {r1} and {f}")
+            r1 = str(f)
+        else:  # read == 2
+            if r2 is not None:
+                raise ValueError(f"Multiple R2 files for sample {sample_id!r}: {r2} and {f}")
+            r2 = str(f)
+
+    if r1 is None or r2 is None:
+        raise ValueError(f"Missing R1 or R2 for sample {sample_id!r}: {[str(f) for f in files]}")
+
+    return r1, r2
 
 class NextflowSamples(Samples):
     """Samples with Nextflow-specific methods."""
@@ -12,22 +73,28 @@ class NextflowSamples(Samples):
         self,
         *_,
         location: str | Path,
+        logger: LoggerAdapter | None = None,
         **kwargs,
     ) -> Path:
         """Write a Nextflow samplesheet"""
         Path(location).mkdir(parents=True, exist_ok=True)
-        _data = [
-            {
+        
+        _data = []
+        for sample in self:
+            r1, r2 = split_r1_r2(sample.files, logger=logger, sample_id=sample.id)
+
+            row = {
                 "sample": sample.id,
-                "fastq_1": str(sample.files[0]),
-                "fastq_2": str(sample.files[1]) if len(sample.files) > 1 else "",
+                "fastq_1": r1,
+                "fastq_2": r2,
                 **{
                     k: (v.format(sample=sample) if isinstance(v, str) else v)
                     for k, v in kwargs.items()
                 },
             }
-            for sample in self
-        ]
+
+            _data.append({k: "" if v is None else str(v) for k, v in row.items()})
+
 
         _header = ",".join(_data[0].keys())
 
