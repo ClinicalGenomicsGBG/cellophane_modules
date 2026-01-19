@@ -1,4 +1,4 @@
-name: Sync Rye metadata
+name: Sync pyproject.toml
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ on:
         type: string
         required: true
       version:
-        description: The version to pass to 'rye version'
+        description: The version to pass to set in pyproject.toml
         type: string
         default: ""
       head:
@@ -24,24 +24,20 @@ on:
         required: true
 
 jobs:
-  sync-rye:
-    name: Sync Rye metadata
+  sync-pyproject:
+    name: Sync pyproject.toml
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ inputs.path }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-          sparse-checkout: ${{ inputs.path }}
-      - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
-        with:
-          working-directory: ${{ inputs.path }}
-      - name: rye-version
-        run: rye version -- ${{ inputs.version }}
-      - name: rye-lock
-        run: rye lock
+      - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
+      - name: uv-version
+        run: uvx --from=toml-cli toml set --toml-path=${{ inputs.path }}/pyproject.toml project.version ${{ inputs.version }}
+      - name: uv-lock
+        run: |
+          uv export --package cellophane-${{ inputs.module }} --no-dev --no-hashes > ${{ inputs.path }}/requirements.lock
+          uv export --package cellophane-${{ inputs.module }} --no-hashes > ${{ inputs.path }}/requirements-dev.lock
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: ${{ inputs.module }}-meta

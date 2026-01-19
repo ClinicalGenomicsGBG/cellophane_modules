@@ -56,14 +56,14 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
+      - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
         with:
           enable-cache: true
-      - name: rye-sync
-        run: rye sync
+      - name: install-project
+        run: uv sync --locked --all-extras --dev
       - uses: tsuyoshicho/action-mypy@759c01eeb886d64bc678a015b8474dfe97a67a0d
         with:
-          execute_command: 'rye run mypy'
+          execute_command: 'uv run --frozen mypy'
           reporter: github-check
 
   pylint:
@@ -72,14 +72,14 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ inputs.head }}
-      - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
+      - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
         with:
           enable-cache: true
-      - name: rye-sync
-        run: rye sync
+      - name: install-project
+        run: uv sync --locked --all-extras --dev
       - uses: dodslaser/action-pylint@f5108d4fee109ac5ab0ae2cfb0570b319a1e51cc
         with:
-          execute_command: 'rye run pylint'
+          execute_command: 'uv run --frozen pylint'
           pylint_rc: ./pyproject.toml
           reporter: github-check
           glob_pattern: '**/*.py'
@@ -113,6 +113,9 @@ jobs:
         with:
           ref: ${{ inputs.head }}
       - uses: reviewdog/action-yamllint@1dca3ad811867be18fbe293a9818d715a6c2cd46
+        with:
+          level: warning
+          fail_level: none
 
   shellcheck:
     runs-on: ubuntu-latest

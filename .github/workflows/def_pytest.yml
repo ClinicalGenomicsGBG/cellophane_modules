@@ -65,14 +65,11 @@ jobs:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         ref: ${{ inputs.pr-head-sha }}
-    - uses: eifinger/setup-rye@c694239a43768373e87d0103d7f547027a23f3c8
-      with:
-        working-directory: ${{ inputs.path }}
+    - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
+    - name: install-project
+      run: uv sync --frozen --all-extras --dev
     - name: install-cellophane
-      working-directory: ${{ inputs.path  }}
-      run: |
-        rye sync
-        rye run uv pip install git+https://github.com/${{ inputs.cellophane-repo }}.git@${{ inputs.cellophane-tag }} --force-reinstall
+      run: uv pip install git+https://github.com/${{ inputs.cellophane-repo }}.git@${{ inputs.cellophane-tag }} --force-reinstall
     - name: pytest
       id: pytest
       timeout-minutes: 1
@@ -82,7 +79,7 @@ jobs:
       working-directory: ${{ inputs.path }}
       run: |
         set +e
-        rye run pytest --junit-xml=${{ env.pytest_junit_xml }}
+        uv run --package cellophane-${{ inputs.module }} --no-sync pytest --junit-xml=${{ env.pytest_junit_xml }}
         code=$?
         if [[ "$code" == "0" ]]; then
           echo ::notice::Tests passed for ${{ inputs.module }} ${{ inputs.version }} with cellophane ${{ inputs.cellophane-tag }}

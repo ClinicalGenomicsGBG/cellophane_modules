@@ -69,9 +69,9 @@ jobs:
       head: ${{ inputs.head }}
       path: ${{ inputs.path }}
 
-  sync-rye:
-    name: Sync Rye metadata
-    uses: ./.github/workflows/def_sync-rye.yml
+  sync-pyproject:
+    name: Sync pyproject.toml
+    uses: ./.github/workflows/def_sync-pyproject.yml
     needs: [detect-release-branch, semver]
     if: inputs.has-changes || !(needs.detect-release-branch.outputs.exists)
     with:
@@ -101,7 +101,7 @@ jobs:
 
   module-pr:
     name: Create or update PR
-    needs: [detect-release-branch, semver, sync-rye, changelog]
+    needs: [detect-release-branch, semver, sync-pyproject, changelog]
     if: (!github.event.act && (inputs.has-changes || (!needs.detect-release-branch.outputs.exists)))
     runs-on: ubuntu-latest
     permissions:

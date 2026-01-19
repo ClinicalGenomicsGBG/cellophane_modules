@@ -6,7 +6,6 @@ authors = [{name = "dodslaser",email = "2969909+dodslaser@users.noreply.github.c
 readme = "README.md"
 dependencies = [
     "boto3>=1.37.25",
-    "boto3-stubs[s3]>=1.40.51",
 ]
 requires-python = ">=3.11,<3.12"
 
@@ -25,19 +24,5 @@ include = [
   "src/*"
 ]
 
-[tool.rye]
-virtual = true
-managed = true
-universal = true
-dev-dependencies = [
-    "mypy>=1.0.0,<2.0.0",
-    "black>=23.1.0,<24.0.0",
-    "isort>=5.12.0,<6.0.0",
-    "flake8>=6.0.0,<7.0.0",
-    "pytest-mock>=3.11.1,<4.0.0",
-    "pytest-clarity>=1.0.1,<2.0.0",
-    "pytest-cov>=4.1.0,<5.0.0",
-    "pylint>=3.0.2,<4.0.0",
-    "cellophane @ git+https://github.com/ClinicalGenomicsGBG/cellophane.git@dev",
-    "pytest>=8.3.3",
-]
+[tool.uv]
+package = false

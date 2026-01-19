@@ -23,7 +23,7 @@ jobs:
       - name: metadata
         id: metadata
         env:
-          BODY: ${{ github.event.comment.body }}
+          BODY: ${{ github.event.pull_request.body }}
         run: |
           for field in module path tag; do
             sed -nE 's/.*<!-- ('${field}'="[^"]+") -->.*/\1/p' <<< "$BODY" | tr -d '"' | tee -a "$GITHUB_OUTPUT"
