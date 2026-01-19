@@ -20,7 +20,7 @@
     --workdir: work
     --executor_name: grid_engine
   logs:
-    - Submitted job 'grid_engine' to Grid Engine (UUID=deadbeef JID=DUMMY)
+    - Submitted job 'grid_engine_job' to Grid Engine (UUID=deadbeef JID=DUMMY)
 
 - id: grid_engine_exception
   external:
@@ -42,7 +42,7 @@
     --workdir: work
     --executor_name: grid_engine
   logs:
-    - "Command failed with exit code: 1"
+    - "Non-zero exit code (1) for grid_engine job 'grid_engine_job'"
 
 - id: grid_engine_terminate
   external:
@@ -70,4 +70,4 @@
     --workdir: work
     --executor_name: grid_engine
   logs:
-    - "Terminated Grid Engine job 'grid_engine' (UUID=deadbeef JID=DUMMY)"
+    - "Terminated Grid Engine job 'grid_engine_job' (UUID=deadbeef JID=DUMMY)"
