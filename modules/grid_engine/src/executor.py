@@ -3,13 +3,11 @@ from pathlib import Path
 from time import sleep
 from traceback import format_exception
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import drmaa2
-from attrs import define
+from attrs import define, field
 from cellophane import Executor, util
-
-_GE_JOBS: dict[UUID, dict[UUID, tuple[drmaa2.JobSession, drmaa2.Job, str]]] = {}
 
 
 def _destroy_ge_session(session: drmaa2.JobSession, logger: logging.LoggerAdapter) -> None:
@@ -21,14 +19,14 @@ def _destroy_ge_session(session: drmaa2.JobSession, logger: logging.LoggerAdapte
             logger.warning(f"Exception while closing Grid Engine session '{session.name=}': {exc!r}")
 
 @define(slots=False, init=False)
-class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg]
+class GridEngineExecutor(Executor, name="grid_engine"):
     """Executor using grid engine."""
 
-    @property
-    def ge_jobs(self) -> dict[UUID, tuple[drmaa2.JobSession, drmaa2.Job, str]]:
-        if self.uuid not in _GE_JOBS:
-            _GE_JOBS[self.uuid] = {}
-        return _GE_JOBS[self.uuid]
+    uuid: UUID = uuid4()
+    _ge_jobs: dict[UUID, tuple[drmaa2.JobSession, drmaa2.Job, str]] = field(factory=dict, init=False, repr=False)
+
+    def __getstate__(self) -> dict[str, Any]:
+        return super().__getstate__() | {"_ge_jobs": {}}
 
     def target(
         self,
@@ -76,7 +74,7 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
                 }
             )
             logger.debug(f"Submitted job '{name}' to Grid Engine (UUID={uuid.hex[:8]} JID={job.id})")
-            self.ge_jobs[uuid] = (session, job, name)
+            self._ge_jobs[uuid] = (session, job, name)
         except drmaa2.Drmaa2Exception as exc:
             logger.error(f"Failed to submit job '{name}' to Grid Engine (UUID={uuid.hex[:8]}): {exc!r}")
             with open(_stderr, "a", encoding="utf-8") as err:
@@ -89,16 +87,16 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
                 sleep(1)
 
 
-        if uuid in self.ge_jobs:
-            session, _, _ = self.ge_jobs[uuid]
+        if uuid in self._ge_jobs:
+            session, _, _ = self._ge_jobs[uuid]
             _destroy_ge_session(session, logger)
-            del self.ge_jobs[uuid]
+            del self._ge_jobs[uuid]
 
         raise SystemExit(exit_status)
 
     def terminate_hook(self, uuid: UUID, logger: logging.LoggerAdapter) -> int:
-        if uuid in self.ge_jobs:
-            session, job, name = self.ge_jobs[uuid]
+        if uuid in self._ge_jobs:
+            session, job, name = self._ge_jobs[uuid]
             try:
                 job.terminate()
                 job.wait_terminated()
@@ -109,5 +107,5 @@ class GridEngineExecutor(Executor, name="grid_engine"):  # type: ignore[call-arg
                 )
             finally:
                 _destroy_ge_session(session, logger)
-                del self.ge_jobs[uuid]
+                del self._ge_jobs[uuid]
         return 143
