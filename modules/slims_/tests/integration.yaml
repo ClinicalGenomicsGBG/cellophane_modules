@@ -603,7 +603,7 @@
     --workdir: work
     --samples_file: samples.yaml
   logs:
-    - "ValueError: Expected 'NoneType' or 'Record' for 'record', got 'INVALID'"
+    - ValueError("Expected 'NoneType' or 'Record' for 'record', got 'INVALID'")
 
 - id: slims_derive_no_record
   external:
@@ -699,7 +699,7 @@
     --workdir: work
     --samples_file: samples.yaml
   logs:
-    - "ValueError: Expected 'dict[str, tuple[Record|None, dict]]' for '_derived', got INVALID"
+    - ValueError("Expected 'dict[str, tuple[Record|None, dict]]' for '_derived', got INVALID")
 
 - id: from_record_map_override
   external:
