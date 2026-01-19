@@ -29,8 +29,18 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v0.1.0": {
+        "cellophane": [
+          "1.1.0",
+          "1.2.0",
+          "dev",
+          "latest"
+        ],
+        "tag": "s3/v0.1.0"
       }
-    }
+    },
+    "latest": "v0.1.0"
   },
   "mail": {
     "path": "modules/mail/",
