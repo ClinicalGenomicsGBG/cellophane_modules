@@ -29,6 +29,7 @@ def _infer_read(path: str | Path) -> tuple[int | None, str]:
             if len(seen) > 1:  # E.g. both R1 and R2 found within one filename
                 return None, f"ambiguous: found both {sorted(seen)} via {how}"
             return next(iter(seen)), how
+
     return None, "no R1/R2 marker found"
 
 def split_r1_r2(files, *, logger: LoggerAdapter | None = None, sample_id = None):
