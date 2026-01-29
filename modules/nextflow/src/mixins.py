@@ -15,21 +15,20 @@ def _infer_read(path: str | Path) -> tuple[int | None, str]:
     Infer read number (1 or 2) from filename tokens.
     Returns (read, how). If read is None, 'how' explains why.
     """
-    name = Path(path).name
+    name = Path(path).name  # Extract the filename only
 
-    for pat, how in ((_EXPLICIT, "explicit R1/R2 token"), (_NUMERIC, "numeric 1/2 token")):
-        last: int | None = None
+    # Try first explicit R1/R2 tokens, then bare 1/2 tokens.
+    for pattern, how in ((_EXPLICIT, "explicit R1/R2 token"), (_NUMERIC, "numeric 1/2 token")):
         seen: set[int] = set()
 
-        for m in pat.finditer(name):
-            val = int(m.group(1))
-            seen.add(val)
-            last = val
+        for match in pattern.finditer(name):
+            val = int(match.group(1))  # Extract the read number (1 or 2)
+            seen.add(val)  # within the set, multiple of the same value is fine
 
-        if last is not None:
-            if len(seen) > 1:
+        if seen:
+            if len(seen) > 1:  # E.g. both R1 and R2 found within one filename
                 return None, f"ambiguous: found both {sorted(seen)} via {how}"
-            return last, how
+            return next(iter(seen)), how
 
     return None, "no R1/R2 marker found"
 
