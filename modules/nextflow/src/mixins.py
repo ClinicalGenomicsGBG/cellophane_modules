@@ -34,7 +34,10 @@ def _infer_read(path: str | Path) -> tuple[int | None, str]:
 
 def split_r1_r2(files, *, logger: LoggerAdapter | None = None, sample_id = None):
     """
-    Strictly split a 2-file FASTQ pair into (R1, R2).
+    Split a list of FASTQ files into (R1, R2).
+
+    Handles both single-end (returns (R1, None)) and paired-end (returns (R1, R2)) data.
+    Raises ValueError for unexpected file counts or ambiguous classification.
     """
     if len(files) == 1:
         if logger:
