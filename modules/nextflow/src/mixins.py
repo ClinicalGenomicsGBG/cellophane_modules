@@ -36,8 +36,12 @@ def split_r1_r2(files, *, logger: LoggerAdapter | None = None, sample_id = None)
     """
     Strictly split a 2-file FASTQ pair into (R1, R2).
     """
-    if len(files) != 2:
-        raise ValueError(f"Expected exactly 2 FASTQ files for sample {sample_id!r}, got {len(files)}")
+    if len(files) == 1:
+        if logger:
+            logger.info(f"Only one FASTQ file found for sample {sample_id!r}, assuming single-end data.")
+        return str(files[0]), None
+    elif len(files) != 2:
+        raise ValueError(f"Expected either 1 (single-end) or 2 (paired-end) FASTQ files for sample {sample_id!r}, got {len(files)}")
 
     r1: str | None = None
     r2: str | None = None
