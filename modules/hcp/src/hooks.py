@@ -19,14 +19,17 @@ def hcp_fetch(
     **_,
 ) -> Samples:
     """Fetch files from HCP."""
-    for sample in samples.with_files:
-        logger.debug(f"Found all files for {sample.id} locally")
-
     if not config.hcp.get("credentials"):
         logger.warning("HCP not configured")
         return samples
 
+    for sample in samples:
+        logger.debug(f"Files for sample {sample.id} (run={getattr(sample,'run',None)}): {sample.files}")
+        logger.debug(f"Files present on cluster: {[Path(f).exists() for f in sample.files]}")
+
     if samples.without_files:
+        for sample in samples.without_files:
+            logger.info(f"Fetching files for {sample.id} (run={getattr(sample,'run',None)}) from HCP: {sample.hcp_remote_keys}")
         logger.info(f"fetching {len(samples.without_files)} samples from HCP")
 
     with WorkerPool(

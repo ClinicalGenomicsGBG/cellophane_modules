@@ -54,6 +54,9 @@ class SlimsSample(Sample):
 
         return matches_
 
+    def _missing(self, x) -> bool:
+        return x in (None, "", [], {}, set(), ())
+
     def map_from_record(
         self,
         record: Record,
@@ -70,10 +73,21 @@ class SlimsSample(Sample):
                     continue
                 value = get_field(record, c_map[key])
                 if isinstance(self[key[0]], Container):
-                    self[key[0]][key[1:]] = value
+                    try:
+                        current = self[key[0]][key[1:]]
+                    except Exception:
+                        current = None
+
+                    if self._missing(current):
+                        self[key[0]][key[1:]] = value
+
                 else:
                     node = reduce(getattr, key[:-1], self)
-                    setattr(node, key[-1], value)
+                    current = getattr(node, key[-1], value)
+
+                    if self._missing(current):
+                        setattr(node, key[-1], value)
+
         except (KeyError, AttributeError):
             warn(f"Unable to map '{'.'.join(key)}' to field in sample")
         except Exception as exc:
