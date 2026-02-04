@@ -73,8 +73,17 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "1.2.0",
+          "dev",
+          "latest"
+        ],
+        "tag": "slims/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   },
   "unpack": {
     "path": "modules/unpack/",
