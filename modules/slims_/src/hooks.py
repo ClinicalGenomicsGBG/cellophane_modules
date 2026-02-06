@@ -32,7 +32,7 @@ def _augment_sample(
             matching_record = record
 
     if matching_record is None:
-        warn(f"No records match sample '{sample.id}'")
+        warn(f"No records match sample '{sample.id}' with run={getattr(sample,'run',None)}")
         return
 
     sample.map_from_record(matching_record, _map)
