@@ -58,7 +58,7 @@ class SlimsSample(Sample):
         self,
         record: Record,
         map_: dict,
-        map_ignore: list[str] | None = None,
+        map_ignore: list[tuple[str, ...]] | None = None,
     ):
         """Map fields from a SLIMS record to the sample"""
         _map_ignore = map_ignore or []

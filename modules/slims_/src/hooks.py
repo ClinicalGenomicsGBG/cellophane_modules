@@ -1,12 +1,13 @@
 """Module for getting samples from SLIMS"""
-
 from datetime import datetime, timedelta
 from logging import LoggerAdapter
 from typing import Any, Sequence
 from warnings import warn
 
 from cellophane import Config, Samples, post_hook, pre_hook
+from cellophane.util import map_nested_keys
 from humanfriendly import parse_timespan
+from ruamel.yaml import YAML
 from slims.internal import Record
 from slims.slims import Slims
 
@@ -14,11 +15,27 @@ from .mixins import SlimsSample, SlimsSamples
 from .util import get_records
 
 
+def _get_explicitly_set_fields(config: Config) -> dict[str, list[tuple[str, ...]]]:
+    if "samples_file" not in config:
+        return {}
+
+    slims_keys = map_nested_keys(config.slims.map)
+
+    yaml = YAML(typ="safe")
+    with open(config.samples_file) as f:
+        samples_data = yaml.load(f)
+
+    return {
+        sample["id"]: [key for key in map_nested_keys(sample) if key in slims_keys]
+        for sample in samples_data
+    }
+
 def _augment_sample(
     sample: SlimsSample,
     records: Sequence[Record],
     match: list[str] | None = None,
     map_: dict[str, Any] | None = None,
+    map_ignore: list[tuple[str, ...]] | None = None,
 ):
     """Augment existing samples with SLIMS records."""
     _map = {"id": "cntn_id"} | (map_ or {})
@@ -35,7 +52,7 @@ def _augment_sample(
         warn(f"No records match sample '{sample.id}'")
         return
 
-    sample.map_from_record(matching_record, _map)
+    sample.map_from_record(matching_record, _map, map_ignore)
 
 
 @pre_hook(label="SLIMS Fetch", before=["hcp_fetch", "slims_derive"])
@@ -89,12 +106,16 @@ def slims_fetch(
     if not samples:
         logger.info(f"Found {len(records)} novel SLIMS samples")
         return samples.from_records(records, config)
+    samples_map_ignore = _get_explicitly_set_fields(config)
     for sample in samples:
+        if (map_ignore := samples_map_ignore.get(sample.id)) is not None:
+            logger.debug(f"Ignoring explicitly set fields for sample '{sample.id}': {map_ignore}")
         _augment_sample(
             sample=sample,
             records=records,
             map_=config.slims.map,
             match=config.slims.match,
+            map_ignore=map_ignore,
         )
     return samples
 
