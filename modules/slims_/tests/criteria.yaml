@@ -502,6 +502,7 @@ id: invalid_field
 criteria: cntn_INVALID equals a
 records:
   - !!python/object/apply:slims_.tests.RecordMock []
+fields: ["cntn_VALID"]
 exception: !!python/name:ValueError
 
 ---

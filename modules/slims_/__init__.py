@@ -1,5 +1,6 @@
 """SLIMS module for cellophane."""
 
+from .src.connection import PaginatedSlims
 from .src.hooks import slims_fetch, slims_sync_post, slims_sync_pre
 from .src.mixins import SlimsSample, SlimsSamples
 from .src.util import (
@@ -24,4 +25,5 @@ __all__ = [
     "validate_criteria",
     "SlimsSample",
     "SlimsSamples",
+    "PaginatedSlims",
 ]

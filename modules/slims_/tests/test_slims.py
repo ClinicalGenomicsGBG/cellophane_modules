@@ -21,7 +21,7 @@ class Test_integration:
 class Test_criteria:
     @staticmethod
     @mark.parametrize(
-        "criteria,parsed,unnested,resolved,exception,records,kwargs",
+        "criteria,parsed,unnested,resolved,exception,records,fields,kwargs",
         [
             param(
                 d["criteria"],
@@ -30,6 +30,7 @@ class Test_criteria:
                 d.get("resolved"),
                 d.get("exception"),
                 d.get("records"),
+                d.get("fields", None),
                 d.get("kwargs", {}),
                 id=d["id"],
             )
@@ -44,11 +45,12 @@ class Test_criteria:
         resolved,
         exception,
         records,
+        fields,
         kwargs,
     ):
         mocker.patch(
             "slims.slims.Slims.fetch",
-            new=slims_.tests.fetch_factory(records or []),
+            new=slims_.tests.fetch_factory(records or [], fields=fields),
         )
         conn = Slims("DUMMY", url="DUMMY", username="DUMMY", password="DUMMY")
         if exception:

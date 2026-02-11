@@ -9,8 +9,8 @@ from cellophane.util import map_nested_keys
 from humanfriendly import parse_timespan
 from ruamel.yaml import YAML
 from slims.internal import Record
-from slims.slims import Slims
 
+from .connection import PaginatedSlims
 from .mixins import SlimsSample, SlimsSamples
 from .util import get_records
 
@@ -72,11 +72,12 @@ def slims_fetch(
         logger.warning("No SLIMS criteria - Skipping fetch")
         return None
 
-    slims_connection = Slims(
+    slims_connection = PaginatedSlims(
         name=__package__,
         url=config.slims.url,
         username=config.slims.username,
         password=config.slims.password,
+        page_size=config.slims.page_size,
     )
 
     if samples:
@@ -99,6 +100,7 @@ def slims_fetch(
         criteria=criteria,
         connection=slims_connection,
     )
+
     if not records:
         logger.warning("No SLIMS records found")
         return None
