@@ -1,6 +1,6 @@
 [project]
 name = "cellophane-slims"
-version = "0.1.1"
+version = "v1.0.0"
 description = "SLIMS module for Cellophane"
 authors = [{name = "dodslaser",email = "2969909+dodslaser@users.noreply.github.com"}]
 readme = "README.md"
