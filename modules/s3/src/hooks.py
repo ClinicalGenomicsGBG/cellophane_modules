@@ -1,10 +1,11 @@
 """Hooks for fetching files from S3 bucket."""
 
+from collections import deque
 from logging import LoggerAdapter
 from pathlib import Path
 from urllib.parse import urlparse
 
-from cellophane import Cleaner, Config, Samples, pre_hook, post_hook
+from cellophane import Cleaner, Config, Samples, pre_hook, post_hook, Output
 from mpire import WorkerPool
 
 from .util import (
@@ -134,9 +135,25 @@ def s3_upload_results(
         n_jobs=config.s3.parallel,
         use_dill=True,
     ) as pool:
-        for output in samples.output:
+        upload_stack = deque(samples.output)
+        while len(upload_stack) > 0:
+            output = upload_stack.pop()
             if not output.src.exists():
                 logger.warning(f"{output.src} does not exist")
+                continue
+
+            if output.src.is_dir():
+                # If the output is a directory, put all files in the directory on the upload stack, preserving the directory structure in S3
+                for file in output.src.rglob("*"):
+                    if file.is_file():
+                        upload_stack.append(
+                            Output(
+                                src=file,
+                                dst=output.dst / file.relative_to(output.src),
+                                checkpoint=output.checkpoint,
+                                optional=output.optional
+                            )
+                        )
                 continue
 
             # Preserve directory structure of results in S3
