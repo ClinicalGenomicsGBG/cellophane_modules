@@ -160,6 +160,7 @@ def recurse_outputs(outputs: Iterable[Output]) -> Generator[Output, None, None]:
     -------
     Generator[Output, None, None]
         A generator of Output objects for each file found in the given paths.
+        Only yields existing paths, even if argument points to missing files or directories.
     """
     for output in outputs:
         if output.src.is_file():

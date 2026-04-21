@@ -129,8 +129,12 @@ def s3_upload_results(
     # AWS keys do not start with a slash, but urlparse includes the leading slash in the path, so we need to remove it
     upload_prefix = parsed.path.lstrip("/")
 
-
     logger.info(f"Uploading output to {upload_path}")
+
+    for output in samples.output:
+        if not output.src.exists():
+            logger.warning(f"Output file {output.src} does not exist, skipping upload")
+            # Will be skipped implicitly by the upload loop, but we log it here for better visibility
 
     with WorkerPool(
         n_jobs=config.s3.parallel,
