@@ -5,10 +5,11 @@ import sys
 from logging import LoggerAdapter
 from pathlib import Path
 from typing import Callable
+from collections.abc import Generator, Iterable
 
 import boto3
 from botocore.client import Config as BotocoreClientConfig
-from cellophane import Cleaner, Sample
+from cellophane import Cleaner, Sample, Output
 from mypy_boto3_s3.service_resource import S3ServiceResource
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
@@ -34,6 +35,7 @@ def _get_s3_session(
         ),
     )
 
+
 def get_endpoint_credentials(
     credential_paths: list[Path],
     endpoint: str,
@@ -43,6 +45,7 @@ def get_endpoint_credentials(
         if credentials.get("endpoint") == endpoint:
             return credentials
     return None
+
 
 def fetch(
     *,
@@ -111,7 +114,7 @@ def upload(
     _bucket.upload_file(
         Filename=str(local_path),
         Key=remote_key,
-        ExtraArgs={"ChecksumAlgorithm": "SHA256"}
+        ExtraArgs={"ChecksumAlgorithm": "SHA256"},
     )
 
     return local_path
@@ -143,3 +146,32 @@ def upload_error_callback(
         )
 
     return inner
+
+
+def recurse_outputs(outputs: Iterable[Output]) -> Generator[Output, None, None]:
+    """Search recursively for output files in the given paths.
+
+    Arguments
+    ---------
+    outputs: Iterable[Output]
+        An iterable of Output objects to search through.
+
+    Returns
+    -------
+    Generator[Output, None, None]
+        A generator of Output objects for each file found in the given paths.
+    """
+    for output in outputs:
+        if output.src.is_file():
+            yield output
+        elif output.src.is_dir():
+            yield from (
+                Output(
+                    src=file,
+                    dst=output.dst / file.relative_to(output.src),
+                    checkpoint=output.checkpoint,
+                    optional=output.optional,
+                )
+                for file in output.src.rglob("*")
+                if file.is_file()
+            )

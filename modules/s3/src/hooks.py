@@ -13,6 +13,7 @@ from .util import (
     error_callback,
     fetch,
     get_endpoint_credentials,
+    recurse_outputs,
     upload,
     upload_callback,
     upload_error_callback,
@@ -135,27 +136,8 @@ def s3_upload_results(
         n_jobs=config.s3.parallel,
         use_dill=True,
     ) as pool:
-        upload_stack = deque(samples.output)
-        while len(upload_stack) > 0:
-            output = upload_stack.pop()
-            if not output.src.exists():
-                logger.warning(f"{output.src} does not exist")
-                continue
 
-            if output.src.is_dir():
-                # If the output is a directory, put all files in the directory on the upload stack, preserving the directory structure in S3
-                for file in output.src.rglob("*"):
-                    if file.is_file():
-                        upload_stack.append(
-                            Output(
-                                src=file,
-                                dst=output.dst / file.relative_to(output.src),
-                                checkpoint=output.checkpoint,
-                                optional=output.optional
-                            )
-                        )
-                continue
-
+        for output in recurse_outputs(samples.output):
             # Preserve directory structure of results in S3
             # output.dst is already prefixed with resultdir
             relative_dst = output.dst.relative_to(config.get("resultdir"))
