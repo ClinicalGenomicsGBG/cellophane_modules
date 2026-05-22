@@ -23,22 +23,29 @@ on:
         type: string
         required: true
 
+env:
+  INPUT_PATH: ${{ inputs.path }}
+  INPUT_VERSION: ${{ inputs.version }}
+  INPUT_MODULE: ${{ inputs.module }}
+
 jobs:
   sync-pyproject:
     name: Sync pyproject.toml
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.head }}
-      - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: uv-version
-        run: uvx --from=toml-cli toml set --toml-path=${{ inputs.path }}/pyproject.toml project.version ${{ inputs.version }}
+
+        run: uvx --from=toml-cli toml set --toml-path=${INPUT_PATH}/pyproject.toml project.version ${INPUT_VERSION}
       - name: uv-lock
         run: |
-          uv export --package cellophane-${{ inputs.module }} --no-dev --no-hashes > ${{ inputs.path }}/requirements.lock
-          uv export --package cellophane-${{ inputs.module }} --no-hashes > ${{ inputs.path }}/requirements-dev.lock
-      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+          uv export --package cellophane-${INPUT_MODULE} --no-dev --no-hashes > ${INPUT_PATH}/requirements.lock
+          uv export --package cellophane-${INPUT_MODULE} --no-hashes > ${INPUT_PATH}/requirements-dev.lock
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.module }}-meta
           path: |

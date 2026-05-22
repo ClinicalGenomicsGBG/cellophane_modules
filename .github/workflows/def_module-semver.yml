@@ -29,6 +29,10 @@ on:  # yamllint disable-line rule:truthy
         description: 'Current version (eg. v1.2.4)'
         value: ${{ jobs.modules-semver.outputs.current-version }}
 
+env:
+  INPUTS_MODULE: ${{ inputs.module }}
+  INPUTS_PATH: ${{ inputs.path }}
+
 jobs:
   modules-semver:
     name: Calculate semver change
@@ -39,38 +43,44 @@ jobs:
       next-version: ${{ steps.format-version.outputs.next-version }}
       current-version: ${{ steps.format-version.outputs.current-version }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - name: latest-tag
-        id: latest-tag
-        run: |
-          tag=$(git tag --list --sort=-committerdate -- '${{ inputs.module }}/*' | head -n1)
-          code=$?; [[ "$code" != "0" ]] && exit $code
-          echo tag=$tag | tee "$GITHUB_OUTPUT"
+          persist-credentials: false
       - name: get-commits
         id: get-commits
         run: |
-          commits=$(git rev-list --no-commit-header --format=%s ${{ steps.latest-tag.outputs.tag }}.. -- ${{ inputs.path }})
-          code=$?; [[ "$code" != "0" ]] && exit $code
-          commits="${commits//'%'/'%25'}"
-          commits="${commits//$'\n'/'%0A'}"
-          commits="${commits//$'\r'/'%0D'}"
-          echo "::set-output name=commits::$commits"
+          set -x
+          TAG=$(jq -r --arg module "$INPUTS_MODULE" '.[$module] | .versions[.latest].tag' modules.json || true)
+          TAG=${TAG#null}
+          TAG=${TAG:-$(git rev-list --max-parents=0 HEAD)}
+          COMMITS=$(git rev-list --no-commit-header --format=%s ${TAG}.. -- ${INPUTS_PATH})
+          CODE=$?; [[ "$CODE" != "0" ]] && exit $CODE
+          COMMITS="${COMMITS//'%'/'%25'}"
+          COMMITS="${COMMITS//$'\n'/'%0A'}"
+          COMMITS="${COMMITS//$'\r'/'%0D'}"
+
+          echo latest-tag=$TAG | tee "$GITHUB_OUTPUT"
+          echo "::set-output name=commits::$COMMITS"
       - uses: dodslaser/semver-action@1b95f7b177b1d974bbc8fe9edb440debb4ac70c2
         id: semver
         with:
           token: ${{ github.token }}
-          branch: ${{ steps.latest-tag.outputs.tag }}
+          branch: ${{ steps.get-commits.outputs.latest-tag }}
           prefix: '${{ inputs.module }}/'
           additionalCommits: ${{ steps.get-commits.outputs.commits }}
           noVersionBumpBehavior: patch
       - name: format-version
         id: format-version
+        env:
+          CURRENT_TAG: ${{ steps.semver.outputs.current }}
+          NEXT_TAG: ${{ steps.semver.outputs.next }}
         run: |
-          current=$(sed 's,^.*/,,' <<< '${{ steps.semver.outputs.current }}')
-          code=$?; [[ "$code" != "0" ]] && exit $code
-          next=$(sed 's,^.*/,,' <<< '${{ steps.semver.outputs.next }}')
-          code=$?; [[ "$code" != "0" ]] && exit $code
+          current=$(sed 's,^.*/,,' <<< "${CURRENT_TAG}")
+          CODE=$?; [[ "$CODE" != "0" ]] && exit $CODE
+
+          next=$(sed 's,^.*/,,' <<< "${NEXT_TAG}")
+          CODE=$?; [[ "$CODE" != "0" ]] && exit $CODE
+
           echo current-version=$current | tee -a "$GITHUB_OUTPUT"
           echo next-version=$next | tee -a "$GITHUB_OUTPUT"

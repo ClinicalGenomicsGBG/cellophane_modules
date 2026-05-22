@@ -15,10 +15,18 @@ on: # yamllint disable-line rule:truthy
         description: The path to include in the changelog
         required: true
         type: string
+      module:
+        description: The module to generate the changelog for
+        required: true
+        type: string
     outputs:
       changes:
         description: "Unreleased changes"
         value: "${{ jobs.changelog.outputs.changes }}"
+
+env:
+  INPUTS_PATH: ${{ inputs.path }}
+  INPUTS_MODULE: ${{ inputs.module }}
 
 jobs:
   changelog:
@@ -27,18 +35,21 @@ jobs:
     outputs:
       changes: "${{ steps.changelog.outputs.content }}"
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.head }}
           fetch-depth: 0
-      - name: fix-glob
-        id: fix-glob
-        run: |
-          glob="$(sed 's,//,/,' <<< '${{ inputs.path }}/*')"
-          code=$?; [[ "$code" != "0" ]] && exit $code
-          echo glob=$glob | tee -a "$GITHUB_OUTPUT"
-      - uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Git Cliff
         id: changelog
-        with:
-          config: cliff.toml
-          args: --unreleased --include-path "${{ steps.fix-glob.outputs.glob }}"
+        run: |
+          GLOB="$(sed 's,//,/,' <<< ${INPUTS_PATH}/*)"
+          code=$?; [[ "$code" != "0" ]] && exit $code
+          echo 'content<<EOF' >> "$GITHUB_OUTPUT"
+          uvx --from=git-cliff@2.13.1 git-cliff \
+            --unreleased \
+            --include-path "${GLOB}" \
+            --tag-pattern "${INPUTS_MODULE}/v?[0-9]+.[0-9]+.[0-9]+" \
+            --config cliff.toml | tee -a "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"

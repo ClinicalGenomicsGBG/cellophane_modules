@@ -52,8 +52,14 @@ on: # yamllint disable-line rule:truthy
         default: false
 
 env:
-  support_json: ${{ inputs.module }}-${{ inputs.cellophane-tag }}.support.json
-  pytest_junit_xml: ${{ inputs.module }}-${{ inputs.cellophane-tag }}.pytest.xml
+  INPUTS_MODULE: ${{ inputs.module }}
+  INPUTS_VERSION: ${{ inputs.version }}
+  INPUTS_CELLAPHANE_REPO: ${{ inputs.cellophane-repo }}
+  INPUTS_CELLAPHANE_TAG: ${{ inputs.cellophane-tag }}
+  INPUTS_IGNORE_FAIL: ${{ inputs.ignore-fail }}
+  INPUTS_CHECK_FAIL: ${{ inputs.check-fail }}
+  SUPPORT_JSON: ${{ inputs.module }}-${{ inputs.cellophane-tag }}.support.json
+  PYTEST_JUNIT_XML: ${{ inputs.module }}-${{ inputs.cellophane-tag }}.pytest.xml
 
 jobs:
   pytest:
@@ -62,14 +68,15 @@ jobs:
     outputs:
       result: ${{ steps.pytest.outputs.result }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         ref: ${{ inputs.pr-head-sha }}
-    - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
+        persist-credentials: false
+    - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
     - name: install-project
       run: uv sync --frozen --all-extras --dev
     - name: install-cellophane
-      run: uv pip install git+https://github.com/${{ inputs.cellophane-repo }}.git@${{ inputs.cellophane-tag }} --force-reinstall
+      run: uv pip install git+https://github.com/${INPUTS_CELLAPHANE_REPO}.git@${INPUTS_CELLAPHANE_TAG} --force-reinstall
     - name: pytest
       id: pytest
       timeout-minutes: 1
@@ -79,50 +86,50 @@ jobs:
       working-directory: ${{ inputs.path }}
       run: |
         set +e
-        uv run --package cellophane-${{ inputs.module }} --no-sync pytest --junit-xml=${{ env.pytest_junit_xml }}
+        uv run --package cellophane-${INPUTS_MODULE} --no-sync pytest --junit-xml=${PYTEST_JUNIT_XML} --tb=short
         code=$?
         if [[ "$code" == "0" ]]; then
-          echo ::notice::Tests passed for ${{ inputs.module }} ${{ inputs.version }} with cellophane ${{ inputs.cellophane-tag }}
-          echo '"${{ inputs.cellophane-tag }}"' > ${{ env.support_json}}
-          echo result=sucess | tee -a "$GITHUB_OUTPUT"
-        elif [[ '${{ inputs.ignore-fail }}' == 'true' ]]; then
+          echo ::notice::Tests passed for ${INPUTS_MODULE} ${INPUTS_VERSION} with cellophane ${INPUTS_CELLAPHANE_TAG}
+          echo "\"${INPUTS_CELLAPHANE_TAG}\"" > ${SUPPORT_JSON}
+          echo result=success | tee -a "$GITHUB_OUTPUT"
+        elif [[ "${INPUTS_IGNORE_FAIL}" == "true" ]]; then
           echo ::notice::Ignoring test failures
-          echo '"${{ inputs.cellophane-tag }}"' > ${{ env.support_json}}
+          echo "\"${INPUTS_CELLAPHANE_TAG}\"" > ${SUPPORT_JSON}
           echo result=failure | tee -a "$GITHUB_OUTPUT"
         elif [[ "$code" == "1" ]]; then
-          echo ::warning::Tests failed for ${{ inputs.module }} ${{ inputs.version }} with cellophane ${{ inputs.cellophane-tag }}
+          echo ::warning::Tests failed for ${INPUTS_MODULE} ${INPUTS_VERSION} with cellophane ${INPUTS_CELLAPHANE_TAG}
           echo result=failure | tee -a "$GITHUB_OUTPUT"
         elif [[ "$code" == "5" ]]; then
-          echo ::warning::No tests found for ${{ inputs.module }}
+          echo ::warning::No tests found for ${INPUTS_MODULE}
           echo result=failure | tee -a "$GITHUB_OUTPUT"
         else
           echo ::error::Unexpected pytest exit code $code
           echo result=failure | tee -a "$GITHUB_OUTPUT"
         fi
 
-        if [[ "${{ inputs.check-fail }}" == "true" ]]; then
+        if [[ "${INPUTS_CHECK_FAIL}" == "true" ]]; then
           exit $code
         else
           exit 0
         fi
 
-    - uses: EnricoMi/publish-unit-test-result-action@170bf24d20d201b842d7a52403b73ed297e6645b
-      if: (!github.event.act && !cancelled() && inputs.publish-results)
+    - uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2.23.0
+      if: (!cancelled() && inputs.publish-results)
       with:
         check_name: Test Results (cellophane@${{ inputs.cellophane-tag }})
-        files: ${{ inputs.path }}/${{ env.pytest_junit_xml }}
+        files: ${{ inputs.path }}/${{ env.PYTEST_JUNIT_XML }}
         commit: ${{ inputs.pr-head-sha }}
 
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: (!cancelled() && (steps.pytest.outputs.result != 'failure'  || inputs.ignore-fail))
       with:
-        name: ${{ env.support_json }}
-        path: ${{ inputs.path }}/${{ env.support_json }}
+        name: ${{ env.SUPPORT_JSON }}
+        path: ${{ inputs.path }}/${{ env.SUPPORT_JSON }}
         retention-days: 1
 
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: (!cancelled())
       with:
-        name: ${{ env.pytest_junit_xml }}
-        path: ${{ inputs.path }}/${{ env.pytest_junit_xml }}
+        name: ${{ env.PYTEST_JUNIT_XML }}
+        path: ${{ inputs.path }}/${{ env.PYTEST_JUNIT_XML }}
         retention-days: 1

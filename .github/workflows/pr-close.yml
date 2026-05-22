@@ -1,9 +1,9 @@
 ---
 name: PR Close
-permissions: read-all
+permissions: {}
 
 on: # yamllint disable-line rule:truthy
-  pull_request_target:
+  pull_request:
     types: [closed]
     branches: [main]
 
@@ -11,36 +11,23 @@ concurrency:
   group: ${{ github.workflow }}
 
 jobs:
-  metadata:
-    if: (!github.event.act && startsWith(github.head_ref, 'release/') && github.event.pull_request.merged)
-    name: Cellect PR metadata
-    runs-on: ubuntu-latest
-    outputs:
-      module: ${{ steps.metadata.outputs.module }}
-      path: ${{ steps.metadata.outputs.path }}
-      tag: ${{ steps.metadata.outputs.tag }}
-    steps:
-      - name: metadata
-        id: metadata
-        env:
-          BODY: ${{ github.event.pull_request.body }}
-        run: |
-          for field in module path tag; do
-            sed -nE 's/.*<!-- ('${field}'="[^"]+") -->.*/\1/p' <<< "$BODY" | tr -d '"' | tee -a "$GITHUB_OUTPUT"
-          done
-
   publish-tag:
     name: Publish Tag
     runs-on: ubuntu-latest
-    if: (!github.event.act && github.event.pull_request.merged)
-    needs: metadata
+    if: (startsWith(github.head_ref, 'release/') && github.event.pull_request.merged)
     permissions:
       contents: write
-    env:
-      next_tag: ${{ needs.metadata.outputs.tag }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: true
       - name: tag
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          git tag ${{ env.next_tag }}
-          git push origin ${{ env.next_tag }} -f
+          set -x
+          MODULE=$(sed -nE 's/release\/([a-zA-Z0-9_-]+)/\1/p' <<< "$HEAD_REF")
+          TAG=$(jq -r --arg module "$MODULE" '.[$module] | .versions[.latest].tag' modules.json)
+          [[ "$MODULE" == "null" || "$TAG" == "null" ]] && exit 1
+          git tag "$TAG" -f
+          git push origin "$TAG" -f

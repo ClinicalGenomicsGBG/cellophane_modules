@@ -39,6 +39,11 @@ on:
       pr-head-sha:
         value: ${{ jobs.module-pr.outputs.pr-head-sha }}
 
+env:
+  INPUTS_MODULE: ${{ inputs.module }}
+  INPUTS_HEAD: ${{ inputs.head }}
+  INPUTS_BASE: ${{ inputs.base }}
+
 jobs:
   detect-release-branch:
     name: Detect release branch
@@ -46,16 +51,46 @@ jobs:
     outputs:
       exists: ${{ steps.branch-exists.outputs.exists }}
     steps:
-      - uses: GuillaumeFalourd/branch-exists@009290475dc3d75b5d7ec680c0c5b614b0d9855d
-        id: branch-exists
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-            branch: release/${{ inputs.module }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check release branch
+        id: branch-exists
+        run: |
+          if git show-ref --verify --quiet refs/remotes/origin/release/${INPUTS_MODULE}; then
+            echo "Branch exists"
+            echo "exists=true" | tee "$GITHUB_OUTPUT"
+          else
+            echo "Branch does not exist"
+            echo "exists=false" | tee "$GITHUB_OUTPUT"
+          fi
+
+  rebase-module-pr:
+    name: Rebase PR
+    needs: [detect-release-branch]
+    if: (!inputs.has-changes) && (needs.detect-release-branch.outputs.exists == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: release/${{ inputs.module }}
+        fetch-depth: 0
+        persist-credentials: true
+    - name: Rebase
+      run: |
+        git config --global user.email "<>"
+        git config --global user.name "github-actions[bot]"
+        git rebase --onto origin/${INPUTS_BASE} HEAD~2
+        git push --force-with-lease
 
   semver:
     name: Calculate next version
     uses: ./.github/workflows/def_module-semver.yml
     needs: [detect-release-branch]
-    if: inputs.has-changes || !(needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     with:
       module: ${{ inputs.module }}
       path: ${{ inputs.path }}
@@ -64,45 +99,27 @@ jobs:
     name: Generate changelog
     uses: ./.github/workflows/def_changelog.yml
     needs: [detect-release-branch]
-    if: inputs.has-changes || !(needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     with:
       head: ${{ inputs.head }}
       path: ${{ inputs.path }}
+      module: ${{ inputs.module }}
 
   sync-pyproject:
     name: Sync pyproject.toml
     uses: ./.github/workflows/def_sync-pyproject.yml
     needs: [detect-release-branch, semver]
-    if: inputs.has-changes || !(needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     with:
       module: ${{ inputs.module }}
       head: ${{ inputs.head }}
       path: ${{ inputs.path }}
       version: ${{ needs.semver.outputs.next-version }}
 
-  rebase-module-pr:
-    name: Rebase PR
-    needs: [detect-release-branch]
-    if: (!github.event.act && (!inputs.has-changes) && needs.detect-release-branch.outputs.exists)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      with:
-        ref: release/${{ inputs.module }}
-        fetch-depth: 0
-    - name: Rebase
-      run: |
-        git config --global user.email "<>"
-        git config --global user.name "github-actions[bot]"
-        git rebase --onto origin/${{ inputs.base }} HEAD~2
-        git push --force-with-lease
-
   module-pr:
     name: Create or update PR
     needs: [detect-release-branch, semver, sync-pyproject, changelog]
-    if: (!github.event.act && (inputs.has-changes || (!needs.detect-release-branch.outputs.exists)))
+    if: (inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -111,33 +128,29 @@ jobs:
       pr-number: ${{ steps.create-or-update-pr.outputs.pull-request-number }}
       pr-head-sha: ${{ steps.create-or-update-pr.outputs.pull-request-head-sha }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         ref: ${{ inputs.head }}
+        persist-credentials: false
     - name: git-reset
-      run: git reset --hard ${{ inputs.head }}
-    - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
+      run: git reset --hard ${INPUTS_HEAD}
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: '${{ inputs.module }}-meta'
         path: ${{ inputs.path }}
         merge-multiple: true
-    - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+    - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
       id: create-or-update-pr
       with:
         title: "Release ${{ inputs.module }} ${{ needs.semver.outputs.next-version }} 🚀"
         commit-message: "chore: Bump ${{ inputs.module }} version to ${{ needs.semver.outputs.next-version }}"
-        body: |
-          ${{ needs.changelog.outputs.changes }}
-          <!-- METADATA USED BY AUTOMATION - DO NOT MODIFY -->
-          <!-- module="${{ inputs.module }}" -->
-          <!-- path="${{ inputs.path }}" -->
-          <!-- tag="${{ needs.semver.outputs.next-tag }}" -->
+        body: ${{ needs.changelog.outputs.changes }}
         branch: release/${{ inputs.module }}
         base: ${{ inputs.base }}
         labels: release
 
-    - uses: actions-ecosystem/action-create-comment@e23bc59fbff7aac7f9044bd66c2dc0fe1286f80b
-      if: (!github.event.act && steps.create-or-update-pr.outputs.pull-request-operation == 'created')
+    - uses: actions-ecosystem/action-create-comment@5b43c092bf96ebc715dbbe5682ecf3b771223855 # v1.0.0
+      if: steps.create-or-update-pr.outputs.pull-request-operation == 'created'
       with:
         github_token: ${{ github.token }}
         number: ${{ steps.create-or-update-pr.outputs.pull-request-number }}
@@ -152,7 +165,7 @@ jobs:
   pytest-released:
     name: Run pytest (cellophane releases)
     needs: [detect-release-branch, semver, module-pr]
-    if: inputs.has-changes || (!needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     uses: ./.github/workflows/def_pytest.yml
     permissions:
       checks: write
@@ -173,7 +186,7 @@ jobs:
   pytest-dev:
     name: Run pytest (cellophane@dev)
     needs: [detect-release-branch, semver, module-pr]
-    if: inputs.has-changes || (!needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     uses: ./.github/workflows/def_pytest.yml
     permissions:
       checks: write
@@ -193,7 +206,7 @@ jobs:
   pytest-latest:
     name: Run pytest (cellophane@latest)
     needs: [detect-release-branch, semver, module-pr]
-    if: inputs.has-changes || (!needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     uses: ./.github/workflows/def_pytest.yml
     permissions:
       checks: write
@@ -211,44 +224,51 @@ jobs:
   update-module-json:
     name: Update modules.json
     needs: [detect-release-branch, pytest-dev, module-pr, semver]
-    if: inputs.has-changes || (!needs.detect-release-branch.outputs.exists)
+    if: inputs.has-changes || (needs.detect-release-branch.outputs.exists == 'false')
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      NEXT_VERSION: ${{ needs.semver.outputs.next-version }}
+      NEXT_TAG: ${{ needs.semver.outputs.next-tag }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: release/${{ inputs.module }}
-      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: '${{ inputs.module }}-*.support.json'
           merge-multiple: true
       - name: merge-json
         env:
-          jq_script: |
+          JQ_SCRIPT: |
             (. | flatten) as $cellophane
             | $modules
-            | .["${{ inputs.module }}"].versions[$version] = {cellophane: $cellophane, tag: $tag}
-            | .["${{ inputs.module }}"].latest = $version
+            | .[$module].versions[$version] = {cellophane: $cellophane, tag: $tag}
+            | .[$module].latest = $version
         run: |
           _modules=$(
             jq \
               --slurp \
-              --arg version "${{ needs.semver.outputs.next-version }}" \
-              --arg tag "${{ needs.semver.outputs.next-tag }}" \
-              --arg latest_tag "${{ inputs.module }}/latest" \
+              --arg module "${INPUTS_MODULE}" \
+              --arg version "${NEXT_VERSION}" \
+              --arg tag "${NEXT_TAG}" \
               --argjson modules "$(cat modules.json)" \
-              '${{ env.jq_script }}' *.support.json
+              "${JQ_SCRIPT}" *.support.json
           )
           code=$?; [[ "$code" != "0" ]] && exit $code
           cat | tee modules.json<< EOF
           $_modules
           EOF
       - name: git-commit
-        if: ${{ !env.ACT }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
         run: |
           git config --global user.email "<>"
           git config --global user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GH_REPOSITORY}
           git add modules.json
-          git commit -m "chore: Update supported cellophane versions for ${{inputs.module}} ${{ needs.semver.outputs.next-version }}"
+          git commit -m "chore: Update supported cellophane versions for ${INPUTS_MODULE} ${NEXT_VERSION}"
           git push

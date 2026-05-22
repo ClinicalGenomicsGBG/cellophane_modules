@@ -13,11 +13,24 @@ concurrency:
 
 jobs:
   cellophane-releases:
-    name: Cellophane releases
-    uses: ./.github/workflows/def_list-releases.yml
-    secrets: inherit
-    with:
-      repo: ClinicalGenomicsGBG/cellophane
+    name: List releases
+    runs-on: ubuntu-latest
+    outputs:
+      releases: ${{ steps.get-tags.outputs.releases }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        fetch-depth: -1
+        persist-credentials: false
+    - name: get-tags
+      id: get-tags
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_REPO: ClinicalGenomicsGBG/cellophane
+      run: |
+        releases=$(gh release list -L 5 --json tagName --jq '[.[].[]]')
+        code=$? [[ "$code" != "0" ]] && exit $code
+        echo releases=$releases | tee -a "$GITHUB_OUTPUT"
 
   modules:
     name: Modules
@@ -29,7 +42,6 @@ jobs:
     name: Create or update release PR
     uses: ./.github/workflows/def_module-pr.yml
     needs: [modules, cellophane-releases]
-    if: needs.modules.outputs.changed_modules != '[]'
     permissions:
       contents: write
       pull-requests: write
@@ -53,7 +65,6 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-    - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b
-      if: ${{ !env.ACT }}
+    - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
       with:
         name: "*"
