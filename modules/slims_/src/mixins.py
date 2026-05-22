@@ -11,6 +11,7 @@ from cellophane.data import Container
 from cellophane.util import map_nested_keys
 from slims.slims import Record, Slims
 
+from .connection import PaginatedSlims
 from .util import get_field, get_fields_from_sample, get_records
 
 
@@ -22,11 +23,12 @@ class SlimsSample(Sample):
         default=None,
         on_setattr=validate,
     )
+    page_size: int = field(default=100)
     _derived: dict[str, tuple[Record, dict]] | None = field(
         default=None,
         on_setattr=validate,
     )
-    _connection: Slims | None = field(
+    _connection: Slims | PaginatedSlims | None = field(
         default=None,
         init=False,
     )
@@ -88,7 +90,11 @@ class SlimsSample(Sample):
     def from_record(cls: Sample, record: Record, config: Config, **kwargs):
         """Create a sample from a SLIMS fastq record"""
 
-        _sample = cls(id=record.cntn_id.value, **kwargs)
+        _sample = cls(
+            id=record.cntn_id.value,
+            page_size=config.slims.page_size,
+            **kwargs,
+        )
         _sample.map_from_record(
             record,
             map_=config.slims.get("map"),
@@ -180,14 +186,15 @@ class SlimsSample(Sample):
         return self.record.pk() if self.record is not None else None
 
     @property
-    def connection(self) -> Slims | None:
+    def connection(self) -> Slims | PaginatedSlims | None:
         """Get a connection to SLIMS from the record"""
         if self._connection is None and self.record:
-            self._connection = Slims(
+            self._connection = PaginatedSlims(
                 "cellophane",
                 url=self.record.slims_api.raw_url,
                 username=self.record.slims_api.username,
                 password=self.record.slims_api.password,
+                page_size=self.page_size,
             )
 
         return self._connection
@@ -214,6 +221,11 @@ def _(this, that):
         return (this or {}) | (that or {})
 
 
+@Sample.merge.register("page_size")
+def _(this, that):
+    return min(this, that)
+
+
 class SlimsSamples(Samples):
     """A list of sample containers with SLIMS integration"""
 
@@ -234,15 +246,16 @@ class SlimsSamples(Samples):
         cls,
         criteria: str,
         config: Config,
-        connection: Slims | None = None,
+        connection: Slims | PaginatedSlims | None = None,
         **kwargs,
     ) -> "SlimsSamples":
         """Get samples from SLIMS records"""
-        _connection = connection or Slims(
+        _connection = connection or PaginatedSlims(
             name=__package__,
             url=config.slims.url,
             username=config.slims.username,
             password=config.slims.password,
+            page_size=config.slims.page_size,
         )
         records = get_records(
             criteria=criteria,

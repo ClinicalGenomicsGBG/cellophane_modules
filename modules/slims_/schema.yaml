@@ -65,3 +65,8 @@ properties:
         description: Do not sync data to SLIMS
         default: false
         type: boolean
+
+      page_size:
+        description: Page size to use when fetching records from SLIMS
+        default: 100
+        type: integer

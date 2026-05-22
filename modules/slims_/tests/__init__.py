@@ -53,14 +53,23 @@ def fetch_factory(
     db_ = db or []
     fields_ = fields or [f for r in db_ for f in dir(r) if f.startswith("cntn_")]
 
-    def fetch(conn: Any, table: str, criteria: Criterion):
-        del conn  # Unused
+    def fetch(
+        conn: Any,
+        table: str,
+        criteria: Criterion,
+        sort: list[str] | None = None,
+        start: int | None = None,
+        end: int | None = None,
+    ):
+        del conn, sort  # Unused
 
         logger.debug("Mocking fetch from from table '%s'", table)
-        if table == "Field":
-            return not db_ or criteria.to_dict()["value"] in fields_
+        if table == "Field" and not fields:
+            return [criteria.to_dict()["value"]][start:end]
+        elif table == "Field":
+            return [f for f in fields_ if f == criteria.to_dict()["value"]][start:end]
         logger.debug("Criteria: %s", criteria.to_dict())
-        match = [r for r in db_ if _match_criteria(criteria, r)]
+        match = [r for r in db_ if _match_criteria(criteria, r)][start:end]
         logger.debug("Matched %s records", len(match))
         return match
 

@@ -28,6 +28,10 @@ from slims.criteria import (
 from slims.criteria import _JunctionType as op
 from slims.slims import Record, Slims
 
+from .connection import PaginatedSlims
+
+
+@cache
 def split_criteria(criteria: str) -> list[str]:
     """
     Tokenize string criteria, maintaining parentheses
@@ -258,7 +262,7 @@ class NoOp(Exception):
 @singledispatch
 def resolve_criteria(
     criteria: Any,
-    connection: Slims,
+    connection: Slims | PaginatedSlims,
     _base: Criterion | None = None,
 ) -> Criterion:  # pragma: no cover
     """
@@ -281,14 +285,14 @@ def resolve_criteria(
 @resolve_criteria.register
 def _(
     criteria: HasParent,
-    connection: Slims,
+    connection: PaginatedSlims | Slims,
     _base: Criterion | None = None,
 ) -> Criterion:
     # Parent records must match the specified criteria
     criteria_ = conjunction()
     if _base:
         # If a base criteria is provided, filter the potential parent records by it
-        derived = connection.fetch("Content", _base) if _base else None
+        derived = connection.fetch("Content", _base)
         criteria_.add(
             is_one_of("cntn_pk", [r.cntn_fk_originalContent.value for r in derived])
         )
@@ -307,7 +311,7 @@ def _(
 @resolve_criteria.register
 def _(
     criteria: HasDerived,
-    connection: Slims,
+    connection: Slims | PaginatedSlims,
     _base: Criterion | None = None,
 ) -> Criterion:
     # Derived records must match the specified criteria
@@ -338,7 +342,7 @@ def _(
 @resolve_criteria.register
 def _(
     criteria: Criterion,
-    connection: Slims,
+    connection: Slims | PaginatedSlims,
     _base: Criterion | None = None,
 ) -> Criterion:
     del connection, _base  # Unused
@@ -350,7 +354,7 @@ def _(
 @resolve_criteria.register
 def _(
     criteria: Junction,
-    connection: Slims,
+    connection: Slims | PaginatedSlims,
     _base: Junction | None = None,
 ) -> Criterion:
     resolved = Junction(criteria.operator)
@@ -405,7 +409,7 @@ def unnest_criteria(criteria: Criterion) -> Criterion:
 
 
 @singledispatch
-def validate_criteria(criteria: Criterion, connection: Slims) -> None:
+def validate_criteria(criteria: Criterion, connection: Slims | PaginatedSlims) -> None:
     """Validate criteria fields to ensure they are valid SLIMS fields."""
     field = criteria.to_dict()["fieldName"]
     if not connection.fetch("Field", equals("tbfl_name", field)):
@@ -413,24 +417,24 @@ def validate_criteria(criteria: Criterion, connection: Slims) -> None:
 
 
 @validate_criteria.register
-def _(criteria: Junction, connection: Slims) -> None:
+def _(criteria: Junction, connection: Slims | PaginatedSlims) -> None:
     for member in criteria.members:
         validate_criteria(member, connection)
 
 
 @validate_criteria.register
-def _(criteria: HasParent, connection: Slims) -> None:
+def _(criteria: HasParent, connection: Slims | PaginatedSlims) -> None:
     validate_criteria(criteria.value, connection)
 
 
 @validate_criteria.register
-def _(criteria: HasDerived, connection: Slims) -> None:
+def _(criteria: HasDerived, connection: Slims | PaginatedSlims) -> None:
     validate_criteria(criteria.value, connection)
 
 
 def get_records(
     criteria: str | Criterion,
-    connection: Slims,
+    connection: Slims | PaginatedSlims,
     **kwargs: Any,
 ) -> list[Record]:
     parsed = parse_criteria(criteria) if isinstance(criteria, str) else [criteria]
