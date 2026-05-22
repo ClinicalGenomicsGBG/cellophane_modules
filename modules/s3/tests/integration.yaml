@@ -220,13 +220,17 @@
 
         @runner()
         @output("test.txt", dst_dir="output", dst_name="sample_test.txt")
+        @output("test_dir")
         def a(samples, workdir, **_):
             (workdir / "test.txt").touch()
+            (workdir / "test_dir").mkdir()
+            (workdir / "test_dir" / "nested.txt").touch()
     input:
       TEST: TEST
   logs:
     - Uploading output to s3://test-bucket/uploaded
     - Uploaded test.txt to s3://test-bucket/uploaded/output/sample_test.txt
+    - Uploaded nested.txt to s3://test-bucket/uploaded/test_dir/nested.txt
     - Finished uploading output to S3
 
 - <<: *s3_upload_test

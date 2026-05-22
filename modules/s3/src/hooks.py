@@ -1,10 +1,11 @@
 """Hooks for fetching files from S3 bucket."""
 
+from collections import deque
 from logging import LoggerAdapter
 from pathlib import Path
 from urllib.parse import urlparse
 
-from cellophane import Cleaner, Config, Samples, pre_hook, post_hook
+from cellophane import Cleaner, Config, Samples, pre_hook, post_hook, Output
 from mpire import WorkerPool
 
 from .util import (
@@ -12,6 +13,7 @@ from .util import (
     error_callback,
     fetch,
     get_endpoint_credentials,
+    recurse_outputs,
     upload,
     upload_callback,
     upload_error_callback,
@@ -127,18 +129,19 @@ def s3_upload_results(
     # AWS keys do not start with a slash, but urlparse includes the leading slash in the path, so we need to remove it
     upload_prefix = parsed.path.lstrip("/")
 
-
     logger.info(f"Uploading output to {upload_path}")
+
+    for output in samples.output:
+        if not output.src.exists():
+            logger.warning(f"Output file {output.src} does not exist, skipping upload")
+            # Will be skipped implicitly by the upload loop, but we log it here for better visibility
 
     with WorkerPool(
         n_jobs=config.s3.parallel,
         use_dill=True,
     ) as pool:
-        for output in samples.output:
-            if not output.src.exists():
-                logger.warning(f"{output.src} does not exist")
-                continue
 
+        for output in recurse_outputs(samples.output):
             # Preserve directory structure of results in S3
             # output.dst is already prefixed with resultdir
             relative_dst = output.dst.relative_to(config.get("resultdir"))
