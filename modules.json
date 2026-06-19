@@ -18,8 +18,17 @@
         "cellophane": [
           ">0.0.0"
         ]
+      },
+      "v1.0.0": {
+        "cellophane": [
+          "1.2.0",
+          "dev",
+          "latest"
+        ],
+        "tag": "hcp/v1.0.0"
       }
-    }
+    },
+    "latest": "v1.0.0"
   },
   "s3": {
     "path": "modules/s3/",
