@@ -1,7 +1,7 @@
 """HCP mixin for samples."""
 
 from attrs import Attribute, define, field
-from attrs.setters import convert
+from attrs.setters import convert, validate
 from cellophane import Sample
 
 
@@ -14,6 +14,12 @@ class HCPSample(Sample):
         kw_only=True,
         converter=lambda value: None if value is None else [str(v) for v in value],
         on_setattr=convert,
+    )
+
+    hcp_bucket: str | None = field(
+        default=None,
+        kw_only=True,
+        on_setattr=validate,
     )
 
     @hcp_remote_keys.validator

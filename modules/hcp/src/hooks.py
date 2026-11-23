@@ -38,6 +38,10 @@ def hcp_fetch(
                 logger.warning(f"No backup for {sample.id}")
                 continue
 
+            if sample.hcp_bucket is None:
+                logger.warning(f"No bucket for {sample.uuid}")
+                continue
+
             fastq_temp = (workdir / "from_hcp")
             for f_idx, remote_key in enumerate(sample.hcp_remote_keys):
                 local_path = fastq_temp / Path(remote_key).name
@@ -55,6 +59,7 @@ def hcp_fetch(
                         "credentials": config.hcp.credentials,
                         "local_path": local_path,
                         "remote_key": remote_key,
+                        "bucket": sample.hcp_bucket,
                     },
                     callback=callback(
                         sample=sample,

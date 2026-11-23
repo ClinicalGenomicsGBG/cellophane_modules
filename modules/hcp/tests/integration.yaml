@@ -7,6 +7,8 @@
         - input/BACKUP
         hcp_remote_keys:
         - BACKUP
+        hcp_bucket:
+        - BUCKET
   external:
     ..: modules/hcp
   mocks:
@@ -27,6 +29,18 @@
         - input/NO_BACKUP
   logs:
     - No backup for NO_BACKUP
+
+- <<: *hcp_test
+  id: no_bucket
+  structure:
+    samples.yaml: |
+      - id: NO_BUCKET
+        files:
+        - input/BACKUP
+        hcp_remote_keys:
+        - BACKUP
+  logs:
+    - No bucket for
 
 - <<: *hcp_test
   id: skip_present
@@ -148,9 +162,11 @@
       - id: A
         files: [input/A_0, input/A_1, input/A_2, input/A_3, input/A_4, input/A_5, input/A_6, input/A_7, input/A_8, input/A_9]
         hcp_remote_keys: [A_0, A_1, A_2, A_3, A_4, A_5, A_6, A_7, A_8, A_9]
+        hcp_bucket: BUCKET
       - id: B
         files: [input/B_0, input/B_1, input/B_2, input/B_3, input/B_4, input/B_5, input/B_6, input/B_7, input/B_8, input/B_9]
         hcp_remote_keys: [B_0, B_1, B_2, B_3, B_4, B_5, B_6, B_7, B_8, B_9]
+        hcp_bucket: BUCKET
   logs:
     - sample.id='A' sample.hcp_remote_keys=['A_0', 'A_1', 'A_2', 'A_3', 'A_4', 'A_5', 'A_6', 'A_7', 'A_8', 'A_9']
     - sample.id='A' files=['work/DUMMY/from_hcp/A_0', 'work/DUMMY/from_hcp/A_1', 'work/DUMMY/from_hcp/A_2', 'work/DUMMY/from_hcp/A_3', 'work/DUMMY/from_hcp/A_4', 'work/DUMMY/from_hcp/A_5', 'work/DUMMY/from_hcp/A_6', 'work/DUMMY/from_hcp/A_7', 'work/DUMMY/from_hcp/A_8', 'work/DUMMY/from_hcp/A_9']
