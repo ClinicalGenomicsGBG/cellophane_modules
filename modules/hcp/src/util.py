@@ -14,6 +14,7 @@ def fetch(
     credentials: Path,
     local_path: Path,
     remote_key: str,
+    bucket: str,
 ) -> Path:
     """Fetches a file from HCP."""
     sys.stdout = open("/dev/null", "w", encoding="utf-8")
@@ -21,7 +22,7 @@ def fetch(
 
     hcpm = HCPManager(
         credentials_path=credentials,
-        bucket="data",  # FIXME: make this configurable
+        bucket=bucket,
     )
 
     hcpm.download_file(
